@@ -1,0 +1,583 @@
+@import '@fancyapps/fancybox/dist/jquery.fancybox.min.css';
+@import 'swiper/swiper-bundle.min.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* fonts */
+@font-face {
+  font-family: 'Gotham Book';
+  src: url('../fonts/Gotham-Book.woff2') format('woff2'),
+    url('../fonts/Gotham-Book.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham Book';
+  src: url('../fonts/Gotham-BookItalic.woff2') format('woff2'),
+    url('../fonts/Gotham-BookItalic.woff') format('woff');
+  font-weight: normal;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Gotham Light';
+  src: url('../fonts/Gotham-Light.woff2') format('woff2'),
+    url('../fonts/Gotham-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham Light';
+  src: url('../fonts/Gotham-LightItalic.woff2') format('woff2'),
+    url('../fonts/Gotham-LightItalic.woff') format('woff');
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Gotham Bold';
+  src: url('../fonts/Gotham-Bold.woff2') format('woff2'),
+    url('../fonts/Gotham-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham Bold';
+  src: url('../fonts/Gotham-BoldItalic.woff2') format('woff2'),
+    url('../fonts/Gotham-BoldItalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+}
+
+* {
+  @apply box-border;
+}
+
+body {
+  @apply bg-maroon;
+}
+
+/* Typography start */
+.leo-content,
+.leo-content p,
+.leo-content ul {
+  @apply font-light font-body text-[16px] leading-[1.3em];
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply uppercase tracking-[0.05em] leading-[1.2em];
+}
+h1 {
+  @apply font-heading font-bold text-[40px] md:text-[44px] lg:text-[48px];
+}
+h2 {
+  @apply font-heading font-bold text-[30px] md:text-[34px] lg:text-[38px];
+}
+h3 {
+  @apply font-cta text-[24px] md:text-[28px] lg:text-[30px];
+}
+h4 {
+  @apply font-body font-light text-[20px];
+}
+h5,
+h6 {
+  @apply font-body !leading-[1.4em] font-light text-[16px] md:text-[18px];
+}
+.leo-content ul {
+  @apply list-disc relative left-[16px] pr-[16px];
+}
+.leo-content ul li {
+  @apply py-1;
+}
+.leo-content p + ul {
+  @apply mt-5;
+}
+.leo-get-in-touch h6 {
+  @apply !text-lightSand !font-cta;
+}
+/* Typography end */
+
+/* Buttons start */
+.leo-btn-wrapper {
+  @apply flex gap-6 flex-wrap items-center;
+}
+.leo-stacked-media-content .leo-btn-wrapper .leo-btn-tertiary {
+  @apply mt-[10px];
+}
+.leo-btn-primary {
+  @apply py-[12px] px-[28px] uppercase font-heading font-bold text-[16px] leading-[1em] text-maroon bg-lightSand rounded-[5px] hover:text-offWhite hover:bg-sand transition-all ease-out duration-150;
+}
+.leo-btn-secondary {
+  @apply capitalize pl-[26px] relative text-[20px] leading-[1em] font-cta text-transparent hover:after:rotate-45;
+}
+.leo-btn-secondary span {
+  @apply pl-[26px] w-full whitespace-nowrap text-lightSand inline-block absolute top-0 left-0 transition-all ease-out duration-75;
+}
+.leo-btn-secondary:hover span {
+  @apply font-heading font-bold;
+}
+.leo-btn-secondary::after {
+  @apply content-[''] absolute left-0 top-[50%] translate-y-[-54%] h-[14px] w-[14px] border-[4px] border-lightSand bg-maroon rounded-[1.5px] transition-all ease-out duration-75;
+}
+.leo-btn-secondary-white {
+  @apply capitalize pl-[26px] relative text-[20px] leading-[1em] font-cta text-offWhite hover:after:rotate-45;
+}
+.leo-btn-secondary-white span {
+  @apply pl-[26px] w-full whitespace-nowrap text-offWhite inline-block absolute top-0 left-0 transition-all ease-out duration-75;
+}
+.leo-btn-secondary-white:hover span {
+  @apply font-heading font-bold;
+}
+.leo-btn-secondary-white::after {
+  @apply content-[''] absolute left-0 top-[50%] translate-y-[-54%] h-[14px] w-[14px] border-[4px] border-offWhite bg-transparent rounded-[1.5px] transition-all ease-out duration-75;
+}
+.leo-btn-tertiary {
+  @apply pl-[7px] capitalize pr-[4px] pb-[9px] text-[20px] leading-[1em] relative font-light font-body text-lightSand hover:font-cta hover:font-normal hover:italic;
+}
+.leo-btn-tertiary:after {
+  @apply content-[''] w-full absolute bottom-[1.3px] left-0 h-[1px] bg-lightSand;
+}
+.leo-btn-tertiary:before {
+  @apply content-[''] w-[4.5px] absolute rotate-45 bottom-0 left-0 h-[4.5px] bg-lightSand rounded-[0.5px] transition-all ease-out duration-150;
+}
+
+/* Buttons end */
+
+/* video lightbox start */
+.btn--iconBtn {
+  @apply flex text-lightSand gap-x-2 items-center font-cta text-[17px] tracking-[0.05em];
+}
+.btn--iconBtn__icon {
+  @apply h-[23px] w-[23px] object-contain transition-all duration-150 ease-out;
+}
+.play-in-lightbox:hover {
+  @apply cursor-pointer;
+}
+.play-in-lightbox:hover .btn--iconBtn__icon,
+.btn--iconBtn:hover .btn--iconBtn__icon {
+  @apply scale-[1.1];
+}
+
+.video-lightbox {
+  @apply fixed h-screen w-full top-0 right-0 z-[99999999] bg-black/70 opacity-0 transition-all duration-300 ease-in-out;
+}
+.video-lightbox__inner {
+  @apply h-full w-full flex items-center justify-center;
+}
+.video-lightbox__close {
+  @apply transition-all duration-150 ease-out absolute top-[28px] right-[28px] h-[16px] object-contain z-50 hover:cursor-pointer;
+}
+.video-lightbox__video {
+  @apply h-[70vh]  md:h-[36vw] w-[100vw] md:w-[75vw] overflow-hidden object-cover border border-transparent;
+}
+.video-lightbox video {
+  transform: scale(0.9, 0.9);
+  opacity: 0;
+  transition: all 0.4s ease-in-out;
+}
+.video-lightbox__close {
+  transform: translateX(10%);
+  opacity: 0;
+  transition: all 0.4s ease-in-out;
+}
+/* video lightbox end */
+
+/* menu modal start */
+.leo-menu-modal #menu-main-menu {
+  @apply flex flex-col gap-4 justify-start h-full;
+}
+.leo-menu-modal #menu-main-menu li a {
+  @apply font-cta text-[33px] relative tracking-[0.05em] uppercase text-[#eed1c0]/60 transition-all duration-150 ease-out;
+}
+.leo-menu-modal #menu-main-menu li a.active {
+  @apply font-heading font-bold text-lightSand pl-[45px];
+}
+.leo-menu-modal #menu-main-menu li a::after {
+  @apply content-[''] h-[21px] w-[21px] border-[6px] border-lightSand rounded-[2px] absolute top-[10px] left-0 opacity-0 transition-all duration-150 ease-out;
+}
+.leo-menu-modal #menu-main-menu li a.active::after {
+  @apply opacity-100;
+}
+.leo-menu-modal #menu-secondary-menu {
+  @apply flex flex-col lg:flex-row items-center gap-4 justify-between w-full;
+}
+.leo-menu-modal #menu-secondary-menu li a {
+  @apply font-cta font-normal text-lightSand hover:text-lightSand/80 transition-all duration-150 ease-out;
+}
+.leo-menu-modal {
+  @apply opacity-0 transition-all duration-300 ease-out;
+}
+.menu-open .leo-menu-modal {
+  @apply opacity-100;
+}
+/* menu modal end */
+
+/* Popup start */
+.leo-popup {
+  @apply opacity-0 transition-all duration-300 ease-out;
+}
+.popup-open .leo-popup {
+  @apply opacity-100;
+}
+.dome-close-popup {
+  filter: invert(100%) grayscale(1) !important;
+}
+
+/* footer start */
+.leo-footer #menu-main-menu-1 {
+  @apply flex flex-col lg:flex-row gap-4 md:gap-5 lg:gap-14;
+}
+.leo-footer #menu-main-menu-1 .menu-item {
+  @apply flex justify-center;
+}
+.leo-footer #menu-main-menu-1 .menu-item a {
+  @apply font-heading tracking-[0.05em] font-bold text-center uppercase text-[20px] text-lightSand hover:text-lightSand/80 transition-all duration-150 ease-out;
+}
+.leo-footer #menu-secondary-menu-1 .menu-item {
+  @apply flex justify-center;
+}
+.leo-footer #menu-secondary-menu-1 .menu-item a {
+  @apply font-body font-light text-[15px] tracking-[0.05em] text-lightSand hover:text-lightSand/80 transition-all duration-150 ease-out;
+}
+.leo-footer #menu-secondary-menu-1 {
+  @apply flex flex-col lg:flex-row gap-4 lg:gap-7;
+}
+/* footer end */
+
+/* Contact Start  */
+.contact-us-form {
+  @apply bg-maroonLight p-[50px];
+}
+.contact-us-form .gform_body .gfield_label {
+  @apply font-body text-[#EED1C0] font-thin  hidden;
+}
+.contact-us-form .gform_body .ginput_container input,
+.contact-us-form .gform_body .ginput_container textarea {
+  @apply bg-maroonLight font-body  text-lightSand antialiased leading-[24px] !py-[15px] border-b-[1px] border-b-lightSand border-solid border-maroonLight border-opacity-[0.3] rounded-none placeholder:text-lightSand placeholder:text-opacity-50 text-[17px] focus:text-opacity-100 focus:placeholder:text-opacity-100 outline-0;
+}
+.contact-us-form .gform_body .ginput_container textarea {
+  @apply !h-[100px];
+}
+.contact-us-form input#gform_submit_button_2 {
+  @apply py-[12px] px-[40px] uppercase font-heading font-bold text-[16px] leading-[1em] text-maroon bg-lightSand rounded-[5px] hover:text-offWhite hover:bg-sand transition-all ease-out duration-150;
+}
+.contact-us-form .gform_footer {
+  @apply w-max relative;
+}
+.contact-us-form .gform_footer::after {
+  @apply content-[''] absolute bottom-0 left-0 w-full h-[1px] bg-opacity-70 scale-x-0 transition-all duration-300 ease-in-out;
+}
+.contact-us-form .gform_footer:hover::after {
+  @apply scale-x-100;
+}
+.contact-us-form .gform_body .gform_fields .gfield .validation_message {
+  @apply !mt-5 !p-0 !bg-transparent !border-0;
+}
+
+.gform_validation_errors {
+  @apply !hidden;
+}
+.contact-content p:not(.contact-content p:nth-last-of-type(1)) {
+  @apply mb-[30px] md:mb-[40px] pt-[10px];
+}
+
+.contact-content p:nth-last-of-type(1) {
+  @apply mb-[20px];
+}
+
+.contact-content h6 {
+  @apply font-medium;
+}
+
+/* Enquiry Form */
+.form-bg {
+  @apply bg-[cover] bg-center;
+}
+.guest-enquiry div.gform-body.gform_body {
+  @apply flex justify-center w-full mt-[10%] pb-[50px] font-body;
+}
+
+.guest-enquiry #gform_page_1_1 {
+  @apply bg-maroonLight p-[50px] w-full md:w-[40%] md:h-[540px];
+}
+
+.guest-enquiry #gform_page_1_3 h6 {
+  @apply md:absolute md:top-[220px] md:right-[35%] md:text-[30px];
+}
+
+.guest-enquiry .gform_page {
+  @apply bg-maroonLight p-[50px] w-full md:w-[60%] md:h-full md:rounded-[5px];
+}
+
+.guest-enquiry .gf_page_steps {
+  @apply !hidden;
+}
+.guest-enquiry label.gfield_label.gform-field-label,
+legend.gfield_label.gform-field-label {
+  @apply font-body !leading-[1.4em] font-light text-[16px] md:text-[18px] text-lightSand/80;
+}
+
+.guest-enquiry .gform-field-label.gform-field-label--type-inline {
+  @apply font-body !leading-[1.4em] font-light text-[14px] md:text-[16px] text-lightSand;
+}
+
+.guest-enquiry .input-group .quantity-field {
+  @apply relative h-[38px] left-[-6px] text-center w-[70%] inline-block resize-y bg-maroonLight border-none  font-body !leading-[1.4em] font-light text-[16px] md:text-[18px] text-lightSand;
+}
+.guest-enquiry input,
+.guest-enquiry textarea,
+.guest-enquiry select,
+.guest-enquiry .input-group,
+.gfield input.large {
+  @apply rounded bg-maroonLight font-body text-lightSand border-[1px] border-solid;
+}
+.guest-enquiry textarea.textarea.medium::placeholder {
+  color: rgba(238, 209, 192, 0.5);
+  font-size: 13px;
+}
+.guest-enquiry .ginput_container input:focus,
+.guest-enquiry.ginput_container textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+.guest-enquiry .large.gfield_select,
+.guest-enquiry textarea.textarea.medium,
+.guest-enquiry .medium.gfield_select {
+  @apply py-0 border-[1px] border-solid;
+}
+.guest-enquiry input,
+.guest-enquiry textarea,
+.guest-enquiry select,
+.guest-enquiry .input-group,
+.gfield input.large,
+.guest-enquiry .large.gfield_select,
+.guest-enquiry textarea.textarea.medium,
+.guest-enquiry .medium.gfield_select {
+  border-color: rgba(238, 209, 192, 0.5);
+}
+.guest-enquiry .form-line {
+  background-color: rgba(238, 209, 192, 0.5);
+}
+.guest-enquiry input#drpf {
+  @apply text-lightSand font-body text-[16px] !text-center placeholder:text-lightSand;
+}
+.guest-enquiry .gform_fields {
+  @apply md:gap-y-[10px] gap-y-[20px];
+}
+.guest-enquiry input#gform_next_button_1_37,
+.guest-enquiry input#gform_next_button_1_91 {
+  @apply py-[12px] px-[40px] uppercase font-heading font-bold text-[16px] leading-[1em] text-maroon bg-lightSand rounded-[5px] hover:text-offWhite hover:bg-sand transition-all ease-out duration-150;
+}
+
+.guest-enquiry input#gform_previous_button_1,
+.guest-enquiry input#gform_previous_button_1_91 {
+  @apply bg-maroonLight border-maroonLight;
+}
+
+.guest-enquiry input#gform_submit_button_1 {
+  @apply py-[12px] px-[40px] uppercase font-heading font-bold text-[16px] leading-[1em] text-maroon bg-lightSand rounded-[5px] hover:text-offWhite hover:bg-sand transition-all ease-out duration-150;
+}
+
+.guest-enquiry .gform_page_footer {
+  @apply justify-center;
+}
+.guest-enquiry h6.title-black {
+  @apply md:absolute md:top-[190px] md:right-[42%] md:text-[30px];
+}
+
+.guest-enquiry
+  .main_form_wrapper
+  .gchoice
+  input:checked
+  ~ label#label_1_81_1::after {
+  @apply content-[''] absolute h-[20px] w-[10px] -top-[5px] left-[10px] !rounded-none opacity-70 cursor-pointer rotate-45 border-0 border-r-[1px] border-b-[1px] border-lightSand !bg-transparent;
+}
+
+.guest-enquiry .main_form_wrapper .gchoice label#label_3_85_1::before {
+  @apply content-[''] absolute top-0 left-0 border-[1px] border-solid border-lightSand p-[10px] border-opacity-70 cursor-pointer !rounded-none !bg-transparent;
+}
+.guest-enquiry .main_form_wrapper .gchoice input:checked ~ label::after {
+  @apply content-[''] absolute h-[14px] w-[14px] top-[4px] left-[4px] rounded-[999px] bg-maroon opacity-70 cursor-pointer;
+}
+
+#gform_ajax_spinner_1,
+#gform_ajax_spinner_2 {
+  @apply hidden;
+}
+
+.progress-step span.step-label {
+  @apply font-body !leading-[1.4em] font-light text-[16px] md:text-[18px];
+}
+
+/* Video Banner */
+t .video-container {
+  @apply absolute top-0 left-0 w-full h-full;
+}
+
+.video-icon-container {
+  @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer;
+}
+
+/* slider styles start */
+.swiper-button-next,
+.swiper-button-prev {
+  outline: none !important;
+}
+/* hide all default swiper arrows */
+.swiper-button-prev::after,
+.swiper-button-next::after {
+  display: none;
+}
+.swiper-button-next,
+.swiper-button-prev {
+  @apply !w-[unset];
+}
+.swiper-pagination-progressbar {
+  @apply !relative !top-[unset] !left-[unset];
+}
+.swiper-pagination-progressbar-fill {
+  @apply !bg-lightSand !h-[1px];
+}
+.leo-highlights-slider-section .swiper-pagination-progressbar-fill {
+  @apply !bg-[#fff];
+}
+.leo-experiences-slider .swiper-slide {
+  @apply !h-[70vw] md:!h-[23vw] !mt-[13vw] md:!mt-[7vw] transition-all duration-[400ms] ease-out;
+}
+.leo-experiences-slider .swiper-slide.swiper-slide-active {
+  @apply !h-[96vw] md:!h-[37vw] !mt-0 md:!mt-0;
+}
+.leo-awards-slider .swiper-wrapper {
+  transition-timing-function: linear !important;
+}
+.leo-experiences-slider .swiper-slide .leo-img-overlay {
+  @apply bg-[#000]/40;
+}
+.leo-experiences-slider .swiper-slide.swiper-slide-active .leo-img-overlay {
+  @apply opacity-0;
+}
+.leo-highlights-slider .swiper-slide {
+  @apply !h-[86vw] md:!h-[35vw] !mt-[5vw] md:!mt-[3.5vw] transition-all duration-[400ms] ease-out;
+}
+.leo-highlights-slider .swiper-slide .leo-img-overlay {
+  @apply bg-[#000]/40;
+}
+.leo-highlights-slider .swiper-slide.swiper-slide-active .leo-img-overlay,
+.leo-highlights-slider .swiper-slide.swiper-slide-next .leo-img-overlay {
+  @apply opacity-0;
+}
+.leo-highlights-slider .swiper-slide.swiper-slide-next .leo-img-overlay {
+  @apply opacity-100 md:!opacity-0;
+}
+.leo-highlights-slider .swiper-slide.swiper-slide-active {
+  @apply !h-[96vw] md:!h-[42vw] !mt-0 md:!mt-0;
+}
+.leo-highlights-slider .swiper-slide.swiper-slide-next {
+  @apply md:!h-[42vw] md:!mt-0;
+}
+.leo-highlights-slider
+  .swiper-slide.swiper-slide-active
+  .leo-highlights-slider__desc {
+  @apply !text-[18px];
+}
+.leo-highlights-slider
+  .swiper-slide.swiper-slide-next
+  .leo-highlights-slider__desc {
+  @apply !text-[18px];
+}
+/* slider styles end */
+
+/* tabs styles start */
+.leo-tabs__tab-list__item span {
+  @apply w-full whitespace-nowrap !text-lightSand/70 inline-block absolute bottom-[5px] left-[1px] transition-all ease-out duration-75;
+}
+.leo-tabs__tab-list {
+  @apply flex overflow-auto;
+}
+.leo-tabs__tab-list__item {
+  @apply whitespace-nowrap !text-transparent;
+}
+.leo-tabbed-listing__tabs.tabs .leo-tabs__tab-list__item {
+  @apply block cursor-pointer text-lightSand/70 py-1 font-body font-light text-[20px] capitalize relative transition-all duration-75 ease-out;
+}
+.leo-tabbed-listing__tabs.tabs .leo-tabs__tab-list__item.active-tab span {
+  @apply !text-lightSand font-bold font-heading text-[19px];
+}
+.leo-tabbed-listing__tabs .leo-tabs__tab {
+  @apply w-full mt-7 hidden;
+}
+.leo-tabbed-listing__tabs.tabs .leo-tabs__tab.active-tab {
+  @apply block;
+}
+/* tabs styles end */
+
+/* gallery styles start */
+.leo-img-medium {
+  @apply h-[140vw] md:h-[34vw] w-full md:w-[calc(25%-16.67px)];
+}
+.leo-img-small {
+  @apply h-[65vw] md:h-[15vw] w-full md:w-[calc(25%-16.67px)];
+}
+.leo-img-large {
+  @apply h-[65vw] md:h-[34vw] w-full md:w-[calc(50%-16.67px)];
+}
+/* gallery styles end */
+
+/* rates-table styles start */
+.leo-rates-table thead th {
+  @apply text-[14px] text-lightSand/80 font-cta italic pt-4;
+}
+.leo-rates-table thead th strong {
+  @apply text-[20px] tracking-[0.05em] !not-italic leading-[1.2em] text-lightSand font-cta uppercase mb-3 inline-block;
+}
+.leo-rates-table td,
+.leo-rates-table th {
+  @apply border-lightSand/40;
+}
+.leo-rates-table tbody tr:nth-last-of-type(1) td {
+  @apply border-b-0;
+}
+.leo-rates-table tbody tr td:nth-of-type(1) {
+  @apply text-[16px] text-lightSand/80 font-body font-light;
+}
+.leo-rates-table tbody tr td {
+  @apply text-[12px] text-lightSand/80 font-cta italic;
+}
+
+.leo-rates-table tbody tr td:nth-of-type(1) strong {
+  @apply text-[20px] tracking-[0.05em] !not-italic leading-[1.2em] text-lightSand font-cta uppercase mb-3 inline-block;
+}
+.leo-rates-table tbody tr td strong {
+  @apply text-[18px] tracking-[0.05em] !not-italic leading-[1.2em] text-lightSand font-heading font-bold uppercase mb-3 inline-block;
+}
+
+/* general content component */
+.leo-general-content h3 {
+  @apply text-center;
+}
+
+.leo-general-content h3 + p,
+.leo-general-content h3 + h4 {
+  @apply mt-10;
+}
+.leo-general-content h4 + p,
+.leo-general-content h4 + ul,
+.leo-general-content ul + p,
+.leo-general-content p + ul,
+.leo-general-content p + h4 {
+  @apply mt-5;
+}
+
+.leo-general-content p + h3,
+.leo-general-content ul + h3 {
+  @apply !mt-14;
+}
+
+.leo-general-content ul {
+  @apply list-disc relative right-[-16px] pr-[16px];
+}

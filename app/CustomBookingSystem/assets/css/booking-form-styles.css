@@ -1,0 +1,893 @@
+/**
+ * Leobo Booking System - Exact Design Match Styles
+ * Matches the layout from provided images
+ */
+
+/* ====================
+   CSS CUSTOM PROPERTIES
+   ==================== */
+
+:root {
+    /* Brand Colors */
+    --leobo-gold: #d4b896;
+    --leobo-dark-brown: #3d2f1f;
+    --leobo-medium-brown: #5a4c3c;
+    --leobo-light-brown: #8b7355;
+    --leobo-cream: #f5f1eb;
+    
+    /* UI Colors */
+    --background-dark: #1a1a1a;
+    --background-medium: #2a2a2a;
+    --background-light: #3a3a3a;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #999999;
+    --border-color: #404040;
+    --input-bg: #2d2d2d;
+    --button-primary: var(--leobo-gold);
+    --button-primary-hover: #c7a885;
+    
+    /* Layout */
+    --container-max-width: 1200px;
+    --sidebar-width: 320px;
+    --border-radius: 8px;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* Typography */
+    --font-family: 'Helvetica Neue', Arial, sans-serif;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 2rem;
+}
+
+/* ====================
+   BASE STYLES
+   ==================== */
+
+.leobo-booking-wrapper {
+    font-family: var(--font-family);
+    color: var(--text-primary);
+    background: var(--background-dark);
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+.leobo-booking-wrapper * {
+    box-sizing: border-box;
+}
+
+/* ====================
+   HEADER PROGRESS BAR
+   ==================== */
+
+.booking-header-progress {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--leobo-dark-brown);
+    padding: var(--spacing-md) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.progress-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.progress-step.active {
+    color: var(--leobo-gold);
+}
+
+.progress-step.completed {
+    color: var(--text-secondary);
+}
+
+.step-icon {
+    font-size: var(--font-size-lg);
+}
+
+/* ====================
+   MAIN LAYOUT
+   ==================== */
+
+.booking-content-wrapper {
+    display: flex;
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    min-height: calc(100vh - 80px);
+}
+
+.booking-main-content {
+    flex: 1;
+    padding: var(--spacing-xl);
+    background: var(--background-medium);
+}
+
+.booking-sidebar {
+    width: var(--sidebar-width);
+    background: var(--background-dark);
+    padding: var(--spacing-xl);
+    border-left: 1px solid var(--border-color);
+}
+
+/* ====================
+   FORM STEPS
+   ==================== */
+
+.booking-step {
+    display: none;
+}
+
+.booking-step.active {
+    display: block;
+}
+
+.step-content {
+    max-width: 600px;
+}
+
+.step-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 300;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-md) 0;
+    line-height: 1.2;
+}
+
+.step-subtitle {
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-xl) 0;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+/* ====================
+   FORM SECTIONS
+   ==================== */
+
+.form-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-lg) 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.section-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-md) 0;
+    font-style: italic;
+}
+
+/* ====================
+   DATE SELECTION
+   ==================== */
+
+.date-input-wrapper {
+    margin-bottom: var(--spacing-lg);
+}
+
+.date-selector-button {
+    background: var(--input-bg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.date-selector-button:hover {
+    border-color: var(--leobo-gold);
+}
+
+.calendar-icon {
+    font-size: var(--font-size-xl);
+}
+
+.date-text {
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.date-subtext {
+    font-size: var(--font-size-sm);
+    color: var(--leobo-gold);
+    font-style: italic;
+    margin-top: var(--spacing-sm);
+}
+
+.date-flexible-option {
+    margin-top: var(--spacing-md);
+}
+
+/* ====================
+   GUEST COUNTERS
+   ==================== */
+
+.guests-section {
+    margin-top: var(--spacing-xl);
+}
+
+.guest-type-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.guest-type-row:last-child {
+    border-bottom: none;
+}
+
+.guest-label {
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.guest-counter {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.counter-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.counter-btn:hover {
+    border-color: var(--leobo-gold);
+    color: var(--leobo-gold);
+}
+
+.counter-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.counter-value {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 30px;
+    text-align: center;
+}
+
+/* ====================
+   INCLUDED FEATURES
+   ==================== */
+
+.included-section {
+    margin-top: var(--spacing-xl);
+}
+
+.included-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.included-list li {
+    position: relative;
+    padding: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+.included-list li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--leobo-gold);
+    font-weight: bold;
+}
+
+/* ====================
+   FORM INPUTS
+   ==================== */
+
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.form-field {
+    position: relative;
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+    width: 100%;
+    background: var(--input-bg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    font-family: var(--font-family);
+    transition: all 0.3s ease;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+    outline: none;
+    border-color: var(--leobo-gold);
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.form-field textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* ====================
+   CHECKBOXES & RADIOS
+   ==================== */
+
+.checkbox-label,
+.radio-option,
+.checkbox-option,
+.experience-option {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.checkbox-label:hover,
+.radio-option:hover,
+.checkbox-option:hover,
+.experience-option:hover {
+    color: var(--leobo-gold);
+}
+
+.checkbox-label input[type="checkbox"],
+.radio-option input[type="radio"],
+.checkbox-option input[type="checkbox"],
+.experience-option input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--leobo-gold);
+}
+
+.checkmark,
+.radio-mark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.radio-mark {
+    border-radius: 50%;
+}
+
+/* ====================
+   FORM GROUPS
+   ==================== */
+
+.checkbox-group,
+.radio-group,
+.experiences-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.experiences-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+/* ====================
+   SELECT DROPDOWN
+   ==================== */
+
+.select-wrapper {
+    position: relative;
+}
+
+.select-wrapper select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+    padding-right: 3rem;
+}
+
+/* ====================
+   STEP NAVIGATION
+   ==================== */
+
+.step-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-xl);
+    border-top: 1px solid var(--border-color);
+}
+
+.step-navigation .btn:only-child {
+    margin-left: auto;
+}
+
+.btn {
+    padding: var(--spacing-md) var(--spacing-xl);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: var(--button-primary);
+    color: var(--background-dark);
+}
+
+.btn-primary:hover {
+    background: var(--button-primary-hover);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    border-color: var(--leobo-gold);
+    color: var(--leobo-gold);
+}
+
+/* ====================
+   SIDEBAR SUMMARY
+   ==================== */
+
+.sidebar-content {
+    position: sticky;
+    top: var(--spacing-xl);
+}
+
+.summary-section {
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.summary-section:last-child {
+    border-bottom: none;
+}
+
+.summary-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 var(--spacing-md) 0;
+}
+
+.guest-summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.guest-item {
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+}
+
+.guest-count {
+    font-weight: 600;
+    color: var(--leobo-gold);
+}
+
+.dates-summary {
+    color: var(--text-primary);
+}
+
+.date-range {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    margin-bottom: var(--spacing-sm);
+}
+
+.nights-count {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+.price-display,
+.total-price-display {
+    text-align: left;
+}
+
+.price-amount {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--leobo-gold);
+}
+
+.price-amount.total {
+    font-size: var(--font-size-2xl);
+}
+
+/* ====================
+   DISCLAIMER
+   ==================== */
+
+.disclaimer-section {
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--background-light);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--leobo-gold);
+}
+
+.disclaimer-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin: 0;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+/* ====================
+   THANK YOU PAGE
+   ==================== */
+
+.thank-you-content {
+    text-align: center;
+    padding: var(--spacing-xl) 0;
+}
+
+.thank-you-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 300;
+    color: var(--leobo-gold);
+    margin: 0 0 var(--spacing-lg) 0;
+}
+
+.thank-you-message {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ====================
+   DATE PICKER MODAL
+   ==================== */
+
+.date-picker-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    position: relative;
+    background: var(--background-medium);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: var(--font-size-2xl);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+/* ====================
+   RESPONSIVE DESIGN
+   ==================== */
+
+@media (max-width: 1024px) {
+    .booking-content-wrapper {
+        flex-direction: column;
+    }
+    
+    .booking-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        order: -1;
+    }
+    
+    .sidebar-content {
+        position: static;
+    }
+    
+    .summary-section {
+        display: inline-block;
+        margin-right: var(--spacing-xl);
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-md);
+        border-bottom: none;
+        border-right: 1px solid var(--border-color);
+        padding-right: var(--spacing-xl);
+    }
+    
+    .summary-section:last-child {
+        border-right: none;
+        margin-right: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .booking-header-progress {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+    
+    .progress-step {
+        padding: var(--spacing-sm);
+        font-size: var(--font-size-xs);
+    }
+    
+    .progress-step:not(:last-child)::after {
+        display: none;
+    }
+    
+    .booking-main-content,
+    .booking-sidebar {
+        padding: var(--spacing-md);
+    }
+    
+    .step-title {
+        font-size: var(--font-size-2xl);
+    }
+    
+    .experiences-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-section {
+        display: block;
+        margin-right: 0;
+        padding-right: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .step-navigation {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .date-selector-button {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+    
+    .guest-type-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: var(--spacing-md);
+    }
+}
+
+/* ====================
+   LOADING STATES
+   ==================== */
+
+.accommodation-loading,
+.package-loading {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ====================
+   ERROR MESSAGES
+   ==================== */
+
+.booking-messages {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+}
+
+.message {
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-md);
+    max-width: 400px;
+}
+
+.error-message {
+    background: #dc3545;
+    color: white;
+    border: 1px solid #c82333;
+}
+
+.success-message {
+    background: #28a745;
+    color: white;
+    border: 1px solid #1e7e34;
+}
+
+/* ====================
+   ANIMATIONS
+   ==================== */
+
+.booking-step {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
