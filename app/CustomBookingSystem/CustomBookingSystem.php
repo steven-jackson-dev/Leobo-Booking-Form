@@ -98,12 +98,12 @@ class LeoboCustomBookingSystem {
         // Dependencies
         wp_enqueue_script('jquery');
         
-        // Booking form JavaScript (now using simple HTML5 date inputs)
+        // Booking form JavaScript (now using custom date picker)
         wp_enqueue_script(
             'leobo-booking-form',
             $this->plugin_url . '/assets/js/booking-form.js',
             array('jquery'),
-            '2.1.0', // Updated for simple date inputs
+            '3.2.0', // Updated for pricing fixes and debugging
             true
         );
         
