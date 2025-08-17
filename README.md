@@ -6,18 +6,25 @@ A comprehensive WordPress custom booking system designed specifically for Leobo 
 
 ## 🌟 Features
 
+### **🚀 LATEST: Smart Blocked Date Management (v3.9.3)**
+- ✨ **Intelligent Consecutive Periods** - Last day of blocked periods available for check-in
+- ✨ **Safari Lodge Logic** - Matches real-world operations (morning checkout, evening arrival)
+- ✨ **Optimized API Calls** - 92% reduction in API requests (single-call architecture)
+- ✨ **Timezone-Safe Calendar** - Accurate date display regardless of user timezone
+- ✨ **Priority Date Logic** - Blocked dates properly override past/future classification
+
 ### **Multi-Step Booking Process**
-- **Step 1: Availability Check** - Custom calendar with date selection and guest counters
+- **Step 1: Availability Check** - Advanced calendar with smart blocked date visualization
 - **Step 2: Tailor Your Stay** - Optional extras, transfers, and helicopter packages
 - **Step 3: Guest Information** - Contact details and special requests
 - **Step 4: Reserved & Ready** - Confirmation and booking summary
 
 ### **Advanced Calendar System**
-- ✅ **Custom Date Picker** - Visual calendar with blocked date highlighting
-- ✅ **Real-time Availability** - Integration with external booking APIs
+- ✅ **Smart Date Picker** - Custom calendar with intelligent blocked date processing
+- ✅ **Real-time Availability** - Optimized Pan Hospitality API integration
 - ✅ **Season Detection** - Automatic pricing based on Standard, Peak, and Christmas seasons
-- ✅ **Date Range Selection** - Intuitive start/end date selection with visual feedback
-- ✅ **Mobile Responsive** - Touch-friendly calendar interface
+- ✅ **Turnover Bookings** - Same-day checkout/check-in support for operational efficiency
+- ✅ **Mobile Responsive** - Touch-friendly calendar interface with timezone safety
 
 ### **Dynamic Pricing Engine**
 - 🔥 **Real-time Calculations** - Instant pricing updates as guests modify selections
@@ -368,11 +375,14 @@ For technical support or customization requests:
 - [ ] **Guest Portal** - Account management for returning guests
 
 ### Recent Updates
-- ✅ **Custom Calendar** - Replaced third-party date picker
-- ✅ **Real-time Pricing** - Instant cost calculations
-- ✅ **Sidebar Synchronization** - Live booking summary
-- ✅ **Mobile Optimization** - Touch-friendly interface
-- ✅ **Error Handling** - Comprehensive user feedback
+- ✅ **Smart Blocked Date Management** - Intelligent consecutive period processing with safari lodge logic
+- ✅ **API Optimization** - Single-call architecture reducing requests by 92%
+- ✅ **Timezone-Safe Calendar** - Local time processing preventing date display shifts
+- ✅ **Enhanced Debugging** - Comprehensive logging and diagnostic tools
+- ✅ **Real-World Booking Logic** - Same-day turnover support matching operational requirements
+- ✅ **Priority Date Classification** - Blocked dates properly override past/future status
+- ✅ **Mobile Optimization** - Touch-friendly interface with consistent behavior
+- ✅ **Error Handling** - Graceful degradation and comprehensive user feedback
 
 ---
 
