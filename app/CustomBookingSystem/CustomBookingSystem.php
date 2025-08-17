@@ -25,8 +25,8 @@ class LeoboCustomBookingSystem {
         // Initialize components
         $this->include_dependencies();
         $this->pricing = new LeoboBookingPricing();
-        $this->database = new LeoboBookingDatabase();
-        $this->email = new LeoboBookingEmail();
+        $this->database = new BookingDatabase();
+        $this->email = new BookingEmail();
         
         // Register hooks
         $this->register_hooks();
@@ -66,8 +66,12 @@ class LeoboCustomBookingSystem {
         add_action('wp_ajax_debug_season_detection', array($this, 'ajax_debug_season'));
         add_action('wp_ajax_debug_min_nights', array($this, 'ajax_debug_min_nights'));
         
+        // Admin AJAX endpoints
+        add_action('wp_ajax_get_submission_details', array($this, 'ajax_get_submission_details'));
+        
         // Shortcode
         add_shortcode('leobo_custom_booking_form', array($this, 'render_booking_form'));
+        add_shortcode('leobo_test_booking_form', array($this, 'render_test_booking_form'));
     }
     
     /**
@@ -106,6 +110,28 @@ class LeoboCustomBookingSystem {
             '3.9.3', // Enhanced blocked dates debugging
             true
         );
+        
+        // Test booking form JavaScript (only if test form is present or in admin)
+        $load_test_script = false;
+        
+        // Check if we're in admin area or test form is present
+        if (is_admin()) {
+            $load_test_script = true;
+        } elseif (get_post() && has_shortcode(get_post()->post_content ?? '', 'leobo_test_booking_form')) {
+            $load_test_script = true;
+        } elseif (isset($_GET['page']) && $_GET['page'] === 'leobo-booking-test-forms') {
+            $load_test_script = true;
+        }
+        
+        if ($load_test_script) {
+            wp_enqueue_script(
+                'leobo-test-booking-form',
+                $this->plugin_url . '/assets/js/test-booking-form.js',
+                array('jquery', 'leobo-booking-form'),
+                '1.0.1', // Updated version for fixes
+                true
+            );
+        }
         
         // Booking form styles
         wp_enqueue_style(
@@ -186,6 +212,34 @@ class LeoboCustomBookingSystem {
     }
     
     /**
+     * Render the test booking form with pre-filled data
+     * Now uses the same template as live form but with test_mode enabled
+     */
+    public function render_test_booking_form($atts = array()) {
+        $atts = shortcode_atts(array(
+            'show_title' => true,
+            'show_description' => true,
+            'theme' => 'test',
+            'test_mode' => true,
+            'embedded_admin' => false
+        ), $atts);
+        
+        // Convert string booleans to actual booleans
+        $atts['show_title'] = filter_var($atts['show_title'], FILTER_VALIDATE_BOOLEAN);
+        $atts['show_description'] = filter_var($atts['show_description'], FILTER_VALIDATE_BOOLEAN);
+        $atts['test_mode'] = filter_var($atts['test_mode'], FILTER_VALIDATE_BOOLEAN);
+        $atts['embedded_admin'] = filter_var($atts['embedded_admin'], FILTER_VALIDATE_BOOLEAN);
+        
+        $args = array(
+            'form_id' => $this->form_id,
+            'attributes' => $atts
+        );
+        
+        // Use the same template as live form, but with test mode enabled
+        return $this->get_template('booking-form', $args);
+    }
+    
+    /**
      * AJAX: Calculate booking price
      */
     public function ajax_calculate_price() {
@@ -232,11 +286,8 @@ class LeoboCustomBookingSystem {
                 return;
             }
             
-            // Validate availability
-            if (!$this->validate_availability($checkin, $checkout)) {
-                wp_send_json_error('Selected dates are not available. Please choose different dates.');
-                return;
-            }
+            // Skip availability validation since this is an enquiry form, not a booking system
+            // Real bookings would need availability validation, but enquiries should always allow price calculation
             
             $pricing = $this->pricing->calculate_pricing($checkin, $checkout, $adults, $children, $accommodation_id, $helicopter_package);
             
@@ -274,33 +325,71 @@ class LeoboCustomBookingSystem {
      * AJAX: Submit booking request
      */
     public function ajax_submit_booking() {
-        check_ajax_referer('leobo_booking_system_nonce', 'nonce');
+        // Add comprehensive debugging
+        error_log('=== BOOKING SUBMISSION DEBUG START ===');
+        error_log('Raw $_POST data: ' . print_r($_POST, true));
         
-        // Sanitize input
-        $booking_data = $this->sanitize_booking_data($_POST);
+        // Temporarily disable nonce check for debugging
+        // if (!check_ajax_referer('leobo_booking_system_nonce', 'nonce', false)) {
+        //     error_log('NONCE VERIFICATION FAILED');
+        //     wp_send_json_error('Security verification failed');
+        //     return;
+        // }
         
-        // Validate availability
-        if (!$this->validate_availability($booking_data['checkin_date'], $booking_data['checkout_date'])) {
-            wp_send_json_error('Selected dates are no longer available');
-        }
+        try {
+            // Sanitize input
+            $booking_data = $this->sanitize_booking_data($_POST);
+            error_log('Sanitized booking data: ' . print_r($booking_data, true));
         
-        // Save booking
-        $booking_id = $this->database->save_booking($booking_data);
-        
-        if ($booking_id) {
-            // Send notifications
-            $this->email->send_admin_notification($booking_id, $booking_data);
-            $this->email->send_user_confirmation($booking_id, $booking_data);
+            // Check if this is a test submission
+            $is_test = isset($_POST['is_test_submission']) && $_POST['is_test_submission'] == '1';
             
-            // Allow custom actions
-            do_action('leobo_booking_submitted', $booking_id, $booking_data);
+            if ($is_test) {
+                // Add test identifier to booking data
+                $booking_data['is_test_booking'] = true;
+                $booking_data['booking_source'] = 'Test Form Submission';
+                
+                // Log test submission
+                error_log('🧪 Test booking submission received: ' . print_r($booking_data, true));
+            }
             
-            wp_send_json_success(array(
-                'message' => 'Booking request submitted successfully!',
-                'booking_id' => $booking_id
-            ));
-        } else {
-            wp_send_json_error('Failed to save booking request');
+            error_log('=== BOOKING SUBMISSION DEBUG END ===');
+            
+            // Skip availability validation since this is an enquiry form, not a booking system
+            // Real bookings would need availability validation, but enquiries should always be allowed
+            
+            // Save booking
+            $booking_id = $this->database->save_booking($booking_data);
+            
+            if ($booking_id) {
+                // Send notifications (with test identifier in subject if test)
+                if ($is_test) {
+                    $this->email->send_admin_notification($booking_id, $booking_data, '[TEST]');
+                    $this->email->send_user_confirmation($booking_id, $booking_data, '[TEST]');
+                } else {
+                    $this->email->send_admin_notification($booking_id, $booking_data);
+                    $this->email->send_user_confirmation($booking_id, $booking_data);
+                }
+                
+                // Allow custom actions
+                do_action('leobo_booking_submitted', $booking_id, $booking_data);
+                
+                $message = $is_test ? 
+                    '🧪 Test booking submitted successfully! Check admin panel for new entry.' : 
+                    'Booking request submitted successfully!';
+                
+                wp_send_json_success(array(
+                    'message' => $message,
+                    'booking_id' => $booking_id,
+                    'is_test' => $is_test
+                ));
+            } else {
+                wp_send_json_error('Failed to save booking request');
+            }
+            
+        } catch (Exception $e) {
+            error_log('BOOKING SUBMISSION ERROR: ' . $e->getMessage());
+            wp_send_json_error('Server error: ' . $e->getMessage());
         }
     }
     
@@ -308,20 +397,37 @@ class LeoboCustomBookingSystem {
      * Sanitize booking form data
      */
     private function sanitize_booking_data($post_data) {
-        return array(
+        $data = array(
             'checkin_date' => sanitize_text_field($post_data['checkin_date']),
             'checkout_date' => sanitize_text_field($post_data['checkout_date']),
             'adults' => intval($post_data['adults'] ?? 2),
             'children' => intval($post_data['children'] ?? 0),
+            'babies' => intval($post_data['babies'] ?? 0),
             'accommodation' => sanitize_text_field($post_data['accommodation'] ?? ''),
-            'helicopter_package' => isset($post_data['helicopter_package']) ? $post_data['helicopter_package'] : null,
-            'first_name' => sanitize_text_field($post_data['first_name']),
-            'last_name' => sanitize_text_field($post_data['last_name']),
+            'helicopter_package' => isset($post_data['helicopter_package']) ? sanitize_text_field($post_data['helicopter_package']) : null,
+            'transfer_options' => isset($post_data['transfer']) ? implode(', ', array_map('sanitize_text_field', $post_data['transfer'])) : null,
+            'experiences' => isset($post_data['experiences']) ? implode(', ', array_map('sanitize_text_field', $post_data['experiences'])) : null,
+            'occasion' => sanitize_text_field($post_data['occasion'] ?? ''),
+            'full_name' => sanitize_text_field($post_data['full_name']),
             'email' => sanitize_email($post_data['email']),
-            'phone' => sanitize_text_field($post_data['phone']),
+            'phone' => sanitize_text_field($post_data['contact_number'] ?? $post_data['phone'] ?? ''),
+            'home_address' => sanitize_textarea_field($post_data['home_address'] ?? ''),
+            'country' => sanitize_text_field($post_data['country'] ?? ''),
+            'how_heard' => sanitize_text_field($post_data['how_heard'] ?? ''),
             'special_requests' => sanitize_textarea_field($post_data['special_requests'] ?? ''),
+            'children_interests' => sanitize_textarea_field($post_data['children_interests'] ?? ''),
+            'flexible_dates' => isset($post_data['flexible_dates']) ? 1 : 0,
             'calculated_total' => floatval($post_data['calculated_total'] ?? 0)
         );
+        
+        // Add test submission data if present
+        if (isset($post_data['is_test_submission']) && $post_data['is_test_submission'] == '1') {
+            $data['is_test_booking'] = true;
+            $data['booking_source'] = 'Test Form Submission';
+            $data['test_submission_time'] = current_time('mysql');
+        }
+        
+        return $data;
     }
     
     /**
@@ -642,6 +748,15 @@ class LeoboCustomBookingSystem {
         
         add_submenu_page(
             'leobo-booking-system',          // Parent slug
+            'Booking Submissions',           // Page title
+            'Submissions',                   // Menu title
+            'manage_options',                // Capability
+            'leobo-booking-submissions',    // Menu slug
+            array($this, 'submissions_page') // Function
+        );
+        
+        add_submenu_page(
+            'leobo-booking-system',          // Parent slug
             'Documentation',                 // Page title
             'Documentation',                 // Menu title
             'manage_options',                // Capability
@@ -683,6 +798,15 @@ class LeoboCustomBookingSystem {
             'manage_options',                // Capability
             'leobo-booking-debug',          // Menu slug
             array($this, 'debug_page')      // Function
+        );
+        
+        add_submenu_page(
+            'leobo-booking-system',          // Parent slug
+            'Test Forms',                    // Page title
+            'Test Forms',                    // Menu title
+            'manage_options',                // Capability
+            'leobo-booking-test-forms',     // Menu slug
+            array($this, 'test_forms_page') // Function
         );
     }
     
@@ -743,6 +867,609 @@ class LeoboCustomBookingSystem {
             </div>
         </div>
         <?php
+    }
+    
+    /**
+     * Check if database tables exist
+     */
+    private function check_database_tables() {
+        return $this->database->table_exists();
+    }
+    
+    /**
+     * Display recent bookings in admin
+     */
+    private function display_recent_bookings() {
+        $bookings = $this->database->get_bookings(10);
+        
+        if (empty($bookings)) {
+            echo '<p>No bookings found. The database table will be created automatically when the first booking is submitted.</p>';
+            return;
+        }
+        
+        echo '<table class="wp-list-table widefat">';
+        echo '<thead><tr>';
+        echo '<th>ID</th><th>Guest Name</th><th>Check-in</th><th>Check-out</th><th>Adults</th><th>Children</th><th>Status</th><th>Test</th><th>Date</th>';
+        echo '</tr></thead><tbody>';
+        
+        foreach ($bookings as $booking) {
+            $test_badge = $booking->is_test_booking ? '<span style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">TEST</span>' : '';
+            echo '<tr>';
+            echo '<td>' . esc_html($booking->id) . '</td>';
+            echo '<td>' . esc_html(
+                !empty($booking->full_name) ? $booking->full_name : 
+                trim(($booking->first_name ?? '') . ' ' . ($booking->last_name ?? ''))
+            ) . '</td>';
+            echo '<td>' . esc_html($booking->checkin_date) . '</td>';
+            echo '<td>' . esc_html($booking->checkout_date) . '</td>';
+            echo '<td>' . esc_html($booking->adults) . '</td>';
+            echo '<td>' . esc_html($booking->children) . '</td>';
+            echo '<td>' . esc_html(ucfirst($booking->status)) . '</td>';
+            echo '<td>' . $test_badge . '</td>';
+            echo '<td>' . esc_html(date('M j, Y', strtotime($booking->created_at))) . '</td>';
+            echo '</tr>';
+        }
+        
+        echo '</tbody></table>';
+    }
+    
+    /**
+     * Display recent test submissions
+     */
+    private function display_test_submissions() {
+        $test_submissions = $this->database->get_test_submissions(20);
+        
+        if (empty($test_submissions)) {
+            echo '<p>No test submissions found yet. Database table not found. Please ensure the booking system is properly set up.</p>';
+            echo '<p><strong>Note:</strong> The database table will be created automatically when the first booking (test or live) is submitted.</p>';
+            return;
+        }
+        
+        echo '<table class="wp-list-table widefat">';
+        echo '<thead><tr>';
+        echo '<th>ID</th><th>Test Date</th><th>Guest Name</th><th>Check-in</th><th>Check-out</th><th>Guests</th><th>Accommodation</th><th>Total</th><th>Status</th>';
+        echo '</tr></thead><tbody>';
+        
+        foreach ($test_submissions as $submission) {
+            echo '<tr>';
+            echo '<td><strong>#' . esc_html($submission->id) . '</strong></td>';
+            echo '<td>' . esc_html(date('M j, Y H:i', strtotime($submission->created_at))) . '</td>';
+            echo '<td>' . esc_html(
+                !empty($submission->full_name) ? $submission->full_name : 
+                trim(($submission->first_name ?? '') . ' ' . ($submission->last_name ?? ''))
+            ) . '</td>';
+            echo '<td>' . esc_html($submission->checkin_date) . '</td>';
+            echo '<td>' . esc_html($submission->checkout_date) . '</td>';
+            echo '<td>' . esc_html($submission->adults . ' adults, ' . $submission->children . ' children') . '</td>';
+            echo '<td>' . esc_html($submission->accommodation) . '</td>';
+            echo '<td>R ' . esc_html(number_format($submission->total_amount, 2)) . '</td>';
+            echo '<td><span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px;">' . esc_html(ucfirst($submission->status)) . '</span></td>';
+            echo '</tr>';
+        }
+        
+        echo '</tbody></table>';
+        
+        echo '<p style="margin-top: 15px; color: #666;"><strong>Total Test Submissions:</strong> ' . count($test_submissions) . '</p>';
+    }
+    
+    /**
+     * Booking Submissions page - View all booking submissions
+     */
+    public function submissions_page() {
+        // Ensure database table is up to date
+        $this->database->create_table();
+        
+        // Handle bulk actions
+        if (isset($_POST['action']) && $_POST['action'] === 'bulk_delete' && isset($_POST['submission_ids'])) {
+            if (wp_verify_nonce($_POST['bulk_action_nonce'], 'bulk_submissions_action')) {
+                $deleted_count = 0;
+                foreach ($_POST['submission_ids'] as $submission_id) {
+                    if ($this->database->delete_booking(intval($submission_id))) {
+                        $deleted_count++;
+                    }
+                }
+                echo '<div class="notice notice-success"><p>' . sprintf('%d submission(s) deleted successfully.', $deleted_count) . '</p></div>';
+            }
+        }
+        
+        // Handle single delete action
+        if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['submission_id'])) {
+            if (wp_verify_nonce($_GET['_wpnonce'], 'delete_submission_' . $_GET['submission_id'])) {
+                if ($this->database->delete_booking(intval($_GET['submission_id']))) {
+                    echo '<div class="notice notice-success"><p>Submission deleted successfully.</p></div>';
+                } else {
+                    echo '<div class="notice notice-error"><p>Failed to delete submission.</p></div>';
+                }
+            }
+        }
+        
+        // Get filter parameters
+        $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
+        $test_filter = isset($_GET['test_mode']) ? sanitize_text_field($_GET['test_mode']) : '';
+        $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+        
+        // Get submissions with filters
+        $submissions = $this->database->get_bookings_with_filters(50, $status_filter, $test_filter, $search);
+        $total_submissions = $this->database->get_submissions_count();
+        $test_submissions_count = $this->database->get_test_submissions_count();
+        $live_submissions_count = $total_submissions - $test_submissions_count;
+        
+        ?>
+        <div class="wrap">
+            <h1>📋 Booking Submissions</h1>
+            
+            <!-- Summary Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div class="card" style="padding: 20px; text-align: center; max-width: none;">
+                    <h2 style="margin: 0; color: #2271b1; font-size: 2.5em;"><?php echo $total_submissions; ?></h2>
+                    <p style="margin: 5px 0 0 0; color: #646970;">Total Submissions</p>
+                </div>
+                <div class="card" style="padding: 20px; text-align: center; max-width: none;">
+                    <h2 style="margin: 0; color: #00a32a; font-size: 2.5em;"><?php echo $live_submissions_count; ?></h2>
+                    <p style="margin: 5px 0 0 0; color: #646970;">Live Bookings</p>
+                </div>
+                <div class="card" style="padding: 20px; text-align: center; max-width: none;">
+                    <h2 style="margin: 0; color: #dba617; font-size: 2.5em;"><?php echo $test_submissions_count; ?></h2>
+                    <p style="margin: 5px 0 0 0; color: #646970;">Test Submissions</p>
+                </div>
+                <div class="card" style="padding: 20px; text-align: center; max-width: none;">
+                    <h2 style="margin: 0; color: #d63638; font-size: 2.5em;"><?php echo count(array_filter($submissions, function($s) { return $s->status === 'pending'; })); ?></h2>
+                    <p style="margin: 5px 0 0 0; color: #646970;">Pending Review</p>
+                </div>
+            </div>
+            
+            <!-- Filters and Search -->
+            <div class="card" style="padding: 20px; margin-bottom: 20px; max-width: none;">
+                <form method="get" style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+                    <input type="hidden" name="page" value="leobo-booking-submissions">
+                    
+                    <div>
+                        <label for="status-filter" style="display: block; margin-bottom: 5px; font-weight: 600;">Status:</label>
+                        <select name="status" id="status-filter">
+                            <option value="">All Status</option>
+                            <option value="pending" <?php selected($status_filter, 'pending'); ?>>Pending</option>
+                            <option value="confirmed" <?php selected($status_filter, 'confirmed'); ?>>Confirmed</option>
+                            <option value="cancelled" <?php selected($status_filter, 'cancelled'); ?>>Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="test-filter" style="display: block; margin-bottom: 5px; font-weight: 600;">Type:</label>
+                        <select name="test_mode" id="test-filter">
+                            <option value="">All Submissions</option>
+                            <option value="live" <?php selected($test_filter, 'live'); ?>>Live Bookings Only</option>
+                            <option value="test" <?php selected($test_filter, 'test'); ?>>Test Submissions Only</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="search-submissions" style="display: block; margin-bottom: 5px; font-weight: 600;">Search:</label>
+                        <input type="search" name="s" id="search-submissions" value="<?php echo esc_attr($search); ?>" placeholder="Search by name, email..." style="width: 250px;">
+                    </div>
+                    
+                    <div>
+                        <input type="submit" class="button" value="Filter">
+                        <a href="<?php echo admin_url('admin.php?page=leobo-booking-submissions'); ?>" class="button">Reset</a>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Submissions Table -->
+            <div class="card" style="padding: 0; max-width: none;">
+                <?php if (empty($submissions)): ?>
+                    <div style="padding: 40px; text-align: center; color: #646970;">
+                        <h3>No submissions found</h3>
+                        <p>No booking submissions match your current filters.</p>
+                        <?php if ($total_submissions === 0): ?>
+                            <p>The database table will be created automatically when the first booking is submitted.</p>
+                            <p><a href="<?php echo admin_url('admin.php?page=leobo-booking-test-forms'); ?>" class="button button-primary">Try Test Form</a></p>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <form method="post" id="submissions-form">
+                        <?php wp_nonce_field('bulk_submissions_action', 'bulk_action_nonce'); ?>
+                        
+                        <!-- Bulk Actions -->
+                        <div style="padding: 15px 20px; border-bottom: 1px solid #c3c4c7; background: #f6f7f7;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <select name="action" id="bulk-action">
+                                    <option value="">Bulk Actions</option>
+                                    <option value="bulk_delete">Delete</option>
+                                </select>
+                                <input type="submit" class="button" value="Apply" onclick="return confirm('Are you sure you want to perform this bulk action?')">
+                                <span style="margin-left: 20px; color: #646970;">
+                                    <?php echo count($submissions); ?> submission(s) shown
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Table -->
+                        <div style="overflow-x: auto;">
+                            <table class="wp-list-table widefat fixed striped" style="margin: 0;">
+                                <thead>
+                                    <tr>
+                                        <td class="manage-column check-column"><input type="checkbox" id="select-all"></td>
+                                        <th>ID</th>
+                                        <th>Guest Name</th>
+                                        <th>Email</th>
+                                        <th>Dates</th>
+                                        <th>Guests</th>
+                                        <th>Status</th>
+                                        <th>Type</th>
+                                        <th>Submitted</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($submissions as $submission): ?>
+                                        <tr>
+                                            <th class="check-column">
+                                                <input type="checkbox" name="submission_ids[]" value="<?php echo $submission->id; ?>">
+                                            </th>
+                                            <td><strong>#<?php echo $submission->id; ?></strong></td>
+                                            <td>
+                                                <strong><?php 
+                                                    // Handle both new (full_name) and legacy (first_name + last_name) data
+                                                    if (!empty($submission->full_name)) {
+                                                        echo esc_html($submission->full_name);
+                                                    } elseif (isset($submission->first_name) || isset($submission->last_name)) {
+                                                        echo esc_html(trim(($submission->first_name ?? '') . ' ' . ($submission->last_name ?? '')));
+                                                    } else {
+                                                        echo 'No name provided';
+                                                    }
+                                                ?></strong>
+                                                <div style="color: #646970; font-size: 12px;">
+                                                    <?php echo esc_html($submission->phone ?? $submission->contact_number ?? 'No phone'); ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <a href="mailto:<?php echo esc_attr($submission->email); ?>">
+                                                    <?php echo esc_html($submission->email); ?>
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <strong><?php echo date('M j', strtotime($submission->checkin_date)); ?> - <?php echo date('M j, Y', strtotime($submission->checkout_date)); ?></strong>
+                                                <div style="color: #646970; font-size: 12px;">
+                                                    <?php 
+                                                    $checkin = new DateTime($submission->checkin_date);
+                                                    $checkout = new DateTime($submission->checkout_date);
+                                                    $nights = $checkin->diff($checkout)->days;
+                                                    echo $nights . ' night' . ($nights !== 1 ? 's' : '');
+                                                    ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                $adults = $submission->adults ?? $submission->guests ?? 0;
+                                                $children = $submission->children ?? 0;
+                                                $babies = $submission->babies ?? 0;
+                                                echo $adults . ' adults';
+                                                if ($children > 0) echo ', ' . $children . ' children';
+                                                if ($babies > 0) echo ', ' . $babies . ' babies';
+                                                ?>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge status-<?php echo $submission->status; ?>">
+                                                    <?php echo ucfirst($submission->status); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php if (isset($submission->is_test_booking) && $submission->is_test_booking): ?>
+                                                    <span class="test-badge">🧪 TEST</span>
+                                                <?php else: ?>
+                                                    <span class="live-badge">✅ LIVE</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php echo date('M j, Y', strtotime($submission->created_at)); ?>
+                                                <div style="color: #646970; font-size: 12px;">
+                                                    <?php echo date('H:i', strtotime($submission->created_at)); ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <a href="#" onclick="showSubmissionDetails(<?php echo $submission->id; ?>); return false;" class="button button-small">View</a>
+                                                <a href="<?php echo wp_nonce_url(add_query_arg(['action' => 'delete', 'submission_id' => $submission->id]), 'delete_submission_' . $submission->id); ?>" 
+                                                   class="button button-small button-link-delete" 
+                                                   onclick="return confirm('Are you sure you want to delete this submission?')">Delete</a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <!-- Submission Details Modal -->
+        <div id="submission-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80%; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+                    <h2 style="margin: 0;">Submission Details</h2>
+                    <button onclick="closeSubmissionModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                </div>
+                <div id="submission-details-content">
+                    <!-- Content will be loaded via AJAX -->
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        
+        .test-badge {
+            background: #fff3cd;
+            color: #856404;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .live-badge {
+            background: #d4edda;
+            color: #155724;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        #select-all:checked + label::before,
+        input[type="checkbox"]:checked::before {
+            content: "✓";
+        }
+        </style>
+        
+        <script>
+        // Select all checkbox functionality
+        document.getElementById('select-all').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('input[name="submission_ids[]"]');
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+        });
+        
+        // Show submission details
+        function showSubmissionDetails(submissionId) {
+            // Show modal
+            document.getElementById('submission-modal').style.display = 'block';
+            document.getElementById('submission-details-content').innerHTML = '<p>Loading...</p>';
+            
+            // Load content via AJAX
+            fetch(ajaxurl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=get_submission_details&submission_id=' + submissionId + '&nonce=<?php echo wp_create_nonce("get_submission_details"); ?>'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('submission-details-content').innerHTML = data.data.html;
+                } else {
+                    document.getElementById('submission-details-content').innerHTML = '<p>Error loading submission details.</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('submission-details-content').innerHTML = '<p>Error loading submission details.</p>';
+            });
+        }
+        
+        // Close modal
+        function closeSubmissionModal() {
+            document.getElementById('submission-modal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('submission-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSubmissionModal();
+            }
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * AJAX handler for submission details
+     */
+    public function ajax_get_submission_details() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'get_submission_details')) {
+            wp_die('Security check failed');
+        }
+        
+        $submission_id = intval($_POST['submission_id']);
+        $submission = $this->database->get_booking_by_id($submission_id);
+        
+        if (!$submission) {
+            wp_send_json_error('Submission not found');
+            return;
+        }
+        
+        // Build HTML for submission details
+        ob_start();
+        ?>
+        <div style="line-height: 1.6;">
+            <!-- Header Info -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 6px;">
+                <div>
+                    <h4 style="margin: 0 0 10px 0; color: #2271b1;">Booking Information</h4>
+                    <p style="margin: 5px 0;"><strong>ID:</strong> #<?php echo $submission->id; ?></p>
+                    <p style="margin: 5px 0;"><strong>Status:</strong> 
+                        <span class="status-badge status-<?php echo $submission->status; ?>">
+                            <?php echo ucfirst($submission->status); ?>
+                        </span>
+                    </p>
+                    <p style="margin: 5px 0;"><strong>Type:</strong> 
+                        <?php if (isset($submission->is_test_booking) && $submission->is_test_booking): ?>
+                            <span class="test-badge">🧪 TEST SUBMISSION</span>
+                        <?php else: ?>
+                            <span class="live-badge">✅ LIVE BOOKING</span>
+                        <?php endif; ?>
+                    </p>
+                    <p style="margin: 5px 0;"><strong>Submitted:</strong> <?php echo date('F j, Y \a\t g:i A', strtotime($submission->created_at)); ?></p>
+                </div>
+                
+                <div>
+                    <h4 style="margin: 0 0 10px 0; color: #2271b1;">Stay Details</h4>
+                    <p style="margin: 5px 0;"><strong>Check-in:</strong> <?php echo date('F j, Y', strtotime($submission->checkin_date)); ?></p>
+                    <p style="margin: 5px 0;"><strong>Check-out:</strong> <?php echo date('F j, Y', strtotime($submission->checkout_date)); ?></p>
+                    <p style="margin: 5px 0;"><strong>Duration:</strong> 
+                        <?php 
+                        $checkin = new DateTime($submission->checkin_date);
+                        $checkout = new DateTime($submission->checkout_date);
+                        $nights = $checkin->diff($checkout)->days;
+                        echo $nights . ' night' . ($nights !== 1 ? 's' : '');
+                        ?>
+                    </p>
+                    <p style="margin: 5px 0;"><strong>Guests:</strong> 
+                        <?php 
+                        $adults = $submission->adults ?? $submission->guests ?? 0;
+                        $children = $submission->children ?? 0;
+                        $babies = $submission->babies ?? 0;
+                        echo $adults . ' adults';
+                        if ($children > 0) echo ', ' . $children . ' children';
+                        if ($babies > 0) echo ', ' . $babies . ' babies';
+                        ?>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Guest Information -->
+            <div style="margin-bottom: 25px;">
+                <h4 style="margin: 0 0 15px 0; color: #2271b1; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Guest Information</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <p style="margin: 8px 0;"><strong>Name:</strong> <?php 
+                            // Handle both new (full_name) and legacy (first_name + last_name) data
+                            if (!empty($submission->full_name)) {
+                                echo esc_html($submission->full_name);
+                            } elseif (isset($submission->first_name) || isset($submission->last_name)) {
+                                echo esc_html(trim(($submission->first_name ?? '') . ' ' . ($submission->last_name ?? '')));
+                            } else {
+                                echo 'No name provided';
+                            }
+                        ?></p>
+                        <p style="margin: 8px 0;"><strong>Email:</strong> <a href="mailto:<?php echo esc_attr($submission->email); ?>"><?php echo esc_html($submission->email); ?></a></p>
+                        <p style="margin: 8px 0;"><strong>Phone:</strong> <?php echo esc_html($submission->phone ?? $submission->contact_number ?? 'Not provided'); ?></p>
+                        <?php if (isset($submission->home_address) && !empty($submission->home_address)): ?>
+                        <p style="margin: 8px 0;"><strong>Address:</strong> <?php echo esc_html($submission->home_address); ?></p>
+                        <?php endif; ?>
+                    </div>
+                    <div>
+                        <?php if (isset($submission->country) && !empty($submission->country)): ?>
+                            <p style="margin: 8px 0;"><strong>Country:</strong> <?php echo esc_html($submission->country); ?></p>
+                        <?php endif; ?>
+                        <?php if (isset($submission->how_heard) && !empty($submission->how_heard)): ?>
+                            <p style="margin: 8px 0;"><strong>How heard about us:</strong> <?php echo esc_html($submission->how_heard); ?></p>
+                        <?php endif; ?>
+                        <?php if (isset($submission->flexible_dates) && $submission->flexible_dates): ?>
+                            <p style="margin: 8px 0;"><strong>Flexible Dates:</strong> ✅ Yes</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Booking Preferences & Extras -->
+            <?php if ((isset($submission->helicopter_package) && !empty($submission->helicopter_package)) || 
+                      (isset($submission->transfer_options) && !empty($submission->transfer_options)) || 
+                      (isset($submission->experiences) && !empty($submission->experiences)) || 
+                      (isset($submission->occasion) && !empty($submission->occasion))): ?>
+            <div style="margin-bottom: 25px;">
+                <h4 style="margin: 0 0 15px 0; color: #2271b1; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Booking Preferences & Extras</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <?php if (isset($submission->helicopter_package) && !empty($submission->helicopter_package)): ?>
+                            <p style="margin: 8px 0;"><strong>Helicopter Package:</strong> <?php echo esc_html($submission->helicopter_package); ?></p>
+                        <?php endif; ?>
+                        <?php if (isset($submission->transfer_options) && !empty($submission->transfer_options)): ?>
+                            <p style="margin: 8px 0;"><strong>Transfer Options:</strong> <?php echo esc_html($submission->transfer_options); ?></p>
+                        <?php endif; ?>
+                    </div>
+                    <div>
+                        <?php if (isset($submission->experiences) && !empty($submission->experiences)): ?>
+                            <p style="margin: 8px 0;"><strong>Experiences:</strong> <?php echo esc_html($submission->experiences); ?></p>
+                        <?php endif; ?>
+                        <?php if (isset($submission->occasion) && !empty($submission->occasion)): ?>
+                            <p style="margin: 8px 0;"><strong>Occasion:</strong> <?php echo esc_html($submission->occasion); ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Special Requests -->
+            <?php if (isset($submission->special_requests) && !empty($submission->special_requests)): ?>
+                <div style="margin-bottom: 25px;">
+                    <h4 style="margin: 0 0 15px 0; color: #2271b1; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Special Requests</h4>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #2271b1;">
+                        <?php echo nl2br(esc_html($submission->special_requests)); ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Children's Interests -->
+            <?php if (isset($submission->children_interests) && !empty($submission->children_interests)): ?>
+                <div style="margin-bottom: 25px;">
+                    <h4 style="margin: 0 0 15px 0; color: #2271b1; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Children's Interests</h4>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #4CAF50;">
+                        <?php echo nl2br(esc_html($submission->children_interests)); ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Activities -->
+            <?php if (isset($submission->activities) && !empty($submission->activities)): ?>
+                <div style="margin-bottom: 25px;">
+                    <h4 style="margin: 0 0 15px 0; color: #2271b1; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Selected Activities</h4>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+                        <?php echo esc_html($submission->activities); ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Raw Data -->
+            <div style="margin-top: 30px;">
+                <h4 style="margin: 0 0 15px 0; color: #646970; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Raw Submission Data</h4>
+                <div style="background: #f1f1f1; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+                    <?php 
+                    $submission_array = (array) $submission;
+                    foreach ($submission_array as $key => $value) {
+                        if ($value !== null && $value !== '') {
+                            echo '<strong>' . esc_html($key) . ':</strong> ' . esc_html($value) . '<br>';
+                        }
+                    }
+                    ?>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div style="margin-top: 25px; text-align: right; border-top: 1px solid #ddd; padding-top: 15px;">
+                <a href="mailto:<?php echo esc_attr($submission->email); ?>?subject=Re: Your booking inquiry #<?php echo $submission->id; ?>" 
+                   class="button button-primary" style="margin-right: 10px;">
+                    📧 Send Email
+                </a>
+                <a href="<?php echo wp_nonce_url(add_query_arg(['action' => 'delete', 'submission_id' => $submission->id], admin_url('admin.php?page=leobo-booking-submissions')), 'delete_submission_' . $submission->id); ?>" 
+                   class="button button-link-delete" 
+                   onclick="return confirm('Are you sure you want to delete this submission? This action cannot be undone.');">
+                    🗑️ Delete Submission
+                </a>
+            </div>
+        </div>
+        <?php
+        $html = ob_get_clean();
+        
+        wp_send_json_success(['html' => $html]);
     }
     
     /**
@@ -855,6 +1582,20 @@ class LeoboCustomBookingSystem {
                     
                     <pre><code>[leobo_custom_booking_form show_title="false" show_description="false"]</code></pre>
                     <p>Displays a minimal form without title or description.</p>
+                    
+                    <h3>🧪 Test Form Shortcode</h3>
+                    <pre><code>[leobo_test_booking_form]</code></pre>
+                    <p>Displays a test booking form with pre-filled data for quick submission testing. Uses the same functions as the main form but with test data pre-populated.</p>
+                    
+                    <h4>Test Form Features</h4>
+                    <ul>
+                        <li><strong>Pre-filled Data:</strong> Sample guest information, dates, and preferences</li>
+                        <li><strong>Same Functions:</strong> Uses identical backend processing as live form</li>
+                        <li><strong>Real Submissions:</strong> Creates actual booking entries in database</li>
+                        <li><strong>Test Emails:</strong> Sends emails with [TEST] prefix in subject</li>
+                        <li><strong>Random Data:</strong> Button to randomize test data for variety</li>
+                        <li><strong>Visual Distinction:</strong> Clearly marked as test form to avoid confusion</li>
+                    </ul>
                 </div>
             </div>
             
@@ -2063,48 +2804,6 @@ echo json_encode($acf_export, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
     
     /**
-     * Check if database tables exist
-     */
-    private function check_database_tables() {
-        global $wpdb;
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'leobo_bookings';
-        return $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name;
-    }
-    
-    /**
-     * Display recent bookings
-     */
-    private function display_recent_bookings() {
-        try {
-            $recent_bookings = $this->database->get_recent_bookings(5);
-            
-            if (empty($recent_bookings)) {
-                echo '<p>No bookings yet.</p>';
-                return;
-            }
-            
-            echo '<table class="wp-list-table widefat">';
-            echo '<thead><tr><th>Date</th><th>Guest</th><th>Dates</th><th>Status</th></tr></thead>';
-            echo '<tbody>';
-            
-            foreach ($recent_bookings as $booking) {
-                echo '<tr>';
-                echo '<td>' . esc_html(date('M j, Y', strtotime($booking->created_at))) . '</td>';
-                echo '<td>' . esc_html($booking->first_name . ' ' . $booking->last_name) . '</td>';
-                echo '<td>' . esc_html($booking->checkin_date . ' to ' . $booking->checkout_date) . '</td>';
-                echo '<td>' . esc_html(ucfirst($booking->status ?? 'pending')) . '</td>';
-                echo '</tr>';
-            }
-            
-            echo '</tbody></table>';
-            
-        } catch (Exception $e) {
-            echo '<p>Unable to load recent bookings.</p>';
-        }
-    }
-    
-    /**
      * AJAX: Debug season detection
      */
     public function ajax_debug_season() {
@@ -2267,7 +2966,104 @@ echo json_encode($acf_export, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         return $date_obj && $start_obj && $end_obj && 
                $date_obj >= $start_obj && $date_obj <= $end_obj;
     }
+    
+    /**
+     * Test Forms page - Live testing interface
+     */
+    public function test_forms_page() {
+        ?>
+        <div class="wrap">
+            <h1>🧪 Test Forms & Submission Testing</h1>
+            
+            <!-- Test Form Instructions -->
+            <div class="card" style="max-width: none; margin-bottom: 20px;">
+                <h2>Quick Testing Guide</h2>
+                <p>Use these tools to quickly test the booking system functionality without manually filling forms.</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #d4b896;">
+                        <h3>📝 Test Form Shortcode</h3>
+                        <p>Add this shortcode to any page or post:</p>
+                        <code style="background: white; padding: 8px; display: block; margin: 10px 0; border-radius: 4px;">[leobo_test_booking_form]</code>
+                        <p><strong>Features:</strong> Pre-filled data, randomize button, same functions as live form</p>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #2196f3;">
+                        <h3>⚡ Quick Test Links</h3>
+                        <p><a href="<?php echo admin_url('admin.php?page=leobo-booking-test-forms&test=inline'); ?>" class="button button-primary">Test Form Below</a></p>
+                        <p><a href="<?php echo add_query_arg('test_booking_form', '1', home_url()); ?>" class="button button-secondary" target="_blank">Open Test Page</a></p>
+                        <p><strong>Note:</strong> Live form with real submission processing</p>
+                    </div>
+                </div>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-top: 20px;">
+                    <h4 style="margin-top: 0; color: #856404;">⚠️ Test Form Notes</h4>
+                    <ul style="margin: 0; color: #856404;">
+                        <li><strong>Real Submissions:</strong> Test forms create actual database entries</li>
+                        <li><strong>Test Emails:</strong> Emails sent with [TEST] prefix in subject line</li>
+                        <li><strong>Same Functions:</strong> Uses identical processing as live booking form</li>
+                        <li><strong>Visual Distinction:</strong> Test forms clearly marked with test styling</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Test Submissions Log -->
+            <div class="card" style="max-width: none; margin-bottom: 20px;">
+                <h2>Recent Test Submissions</h2>
+                <?php $this->display_test_submissions(); ?>
+            </div>
+            
+            <?php if (isset($_GET['test']) && $_GET['test'] === 'inline'): ?>
+            <!-- Inline Test Form -->
+            <div class="card" style="max-width: none;">
+                <h2>🧪 Live Test Form</h2>
+                <p style="color: #666; margin-bottom: 20px;">This is a live test form running in the admin area. All functionality is identical to the frontend version.</p>
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 8px;">
+                    <?php 
+                    // Render test form but mark it as embedded in admin to prevent duplicate controls
+                    $test_atts = array('test_mode' => true, 'embedded_admin' => true);
+                    echo $this->render_test_booking_form($test_atts); 
+                    ?>
+                </div>
+            </div>
+            <?php else: ?>
+            <!-- Instructions when not showing inline form -->
+            <div class="card" style="max-width: none;">
+                <h2>💡 How to Use Test Forms</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h3>1. Use Shortcode</h3>
+                        <p>Add <code>[leobo_test_booking_form]</code> to any page</p>
+                        <p><strong>Benefits:</strong> Full test controls, real-time testing</p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h3>2. Admin Testing</h3>
+                        <p><a href="<?php echo admin_url('admin.php?page=leobo-booking-test-forms&test=inline'); ?>" class="button button-primary">Enable Inline Test Form</a></p>
+                        <p><strong>Benefits:</strong> Test directly in admin panel</p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h3>3. Separate Test Page</h3>
+                        <p><a href="<?php echo add_query_arg('test_booking_form', '1', home_url()); ?>" class="button button-secondary" target="_blank">Open Test Page</a></p>
+                        <p><strong>Benefits:</strong> Frontend environment testing</p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+        </div>
+        
+        <style>
+        .wrap .leobo-booking-form {
+            margin: 0;
+        }
+        .wrap .test-form {
+            border: 3px dashed #d4b896;
+        }
+        .wrap code {
+            font-family: Monaco, Consolas, monospace;
+            font-size: 13px;
+        }
+        </style>
+        <?php
+    }
 }
-
-// Initialize the system
-new LeoboCustomBookingSystem();

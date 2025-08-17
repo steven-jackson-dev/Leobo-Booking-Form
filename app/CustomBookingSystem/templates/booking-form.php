@@ -2,9 +2,10 @@
 /**
  * Leobo Custom Booking System - Multi-Step Booking Form Template
  * Matches the exact design from the provided images
+ * Enhanced with test mode capabilities for single-truth approach
  * 
  * @package LeoboCustomBookingSystem
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 // Prevent direct access
@@ -14,9 +15,75 @@ if (!defined('ABSPATH')) {
 
 $form_id = $args['form_id'] ?? 'leobo-booking-form';
 $atts = $args['attributes'] ?? array();
+
+// Check if this is test mode
+$is_test_mode = isset($atts['test_mode']) && $atts['test_mode'];
+$is_embedded_admin = isset($atts['embedded_admin']) && $atts['embedded_admin'];
+
+// Test data for pre-filling (only used in test mode)
+$test_data = array(
+    'checkin_date' => '2025-08-25',
+    'checkout_date' => '2025-08-28', 
+    'adults' => '4',
+    'children' => '2',
+    'babies' => '1',
+    'full_name' => 'John Test-Safari',
+    'email' => 'john.test@example.com',
+    'contact_number' => '+27 11 123 4567',
+    'home_address' => '123 Test Street, Safari City',
+    'country' => 'ZA',
+    'how_heard' => 'google',
+    'special_requests' => 'This is a test booking submission. Please celebrate dietary requirements and ensure all facilities are ready for our test stay.',
+    'children_interests' => 'Stargazing, game viewing, and swimming'
+);
 ?>
 
-<div id="leobo-booking-system" class="leobo-booking-wrapper">
+<?php if ($is_test_mode && !$is_embedded_admin): ?>
+<!-- Test Mode Controls Panel -->
+<div class="test-mode-panel">
+    <div class="test-panel-header">
+        <div class="test-badge">🧪 TEST MODE</div>
+        <div class="test-info">
+            <strong>Live Form with Test Data:</strong> This is the actual booking form with pre-filled test data for quick testing.
+        </div>
+        <button type="button" class="test-panel-toggle" onclick="toggleTestPanel()">
+            <span class="toggle-text">Controls</span>
+            <span class="toggle-icon">▼</span>
+        </button>
+    </div>
+    <div class="test-panel-controls" id="test-panel-controls">
+        <div class="test-controls-grid">
+            <div class="test-control-group">
+                <label>Quick Actions:</label>
+                <div class="test-buttons">
+                    <button type="button" class="test-btn" onclick="fillTestData()">📝 Fill Test Data</button>
+                    <button type="button" class="test-btn" onclick="randomizeTestData()">🎲 Randomize Data</button>
+                    <button type="button" class="test-btn" onclick="clearFormData()">🗑️ Clear Form</button>
+                </div>
+            </div>
+            <div class="test-control-group">
+                <label>Jump to Step:</label>
+                <div class="test-buttons">
+                    <button type="button" class="test-btn-small" onclick="goToStep(1)">1</button>
+                    <button type="button" class="test-btn-small" onclick="goToStep(2)">2</button>
+                    <button type="button" class="test-btn-small" onclick="goToStep(3)">3</button>
+                    <button type="button" class="test-btn-small" onclick="goToStep(4)">4</button>
+                </div>
+            </div>
+            <div class="test-control-group">
+                <label>Test Scenarios:</label>
+                <div class="test-buttons">
+                    <button type="button" class="test-btn" onclick="loadFamilyScenario()">👨‍👩‍👧‍👦 Family</button>
+                    <button type="button" class="test-btn" onclick="loadCoupleScenario()">💑 Couple</button>
+                    <button type="button" class="test-btn" onclick="loadGroupScenario()">👥 Group</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<div id="leobo-booking-system" class="leobo-booking-wrapper<?php echo $is_test_mode ? ' test-mode-active' : ''; ?>">
     
     <!-- Header Progress -->
     <div class="booking-header-progress">
@@ -118,8 +185,8 @@ $atts = $args['attributes'] ?? array();
                                 </div>
                                 
                                 <!-- Hidden inputs for form submission -->
-                                <input type="hidden" id="arrival-date" name="checkin_date" />
-                                <input type="hidden" id="departure-date" name="checkout_date" />
+                                <input type="hidden" id="arrival-date" name="checkin_date" value="<?php echo $is_test_mode ? esc_attr($test_data['checkin_date']) : date('Y-m-d', strtotime('+7 days')); ?>" />
+                                <input type="hidden" id="departure-date" name="checkout_date" value="<?php echo $is_test_mode ? esc_attr($test_data['checkout_date']) : date('Y-m-d', strtotime('+10 days')); ?>" />
                             </div>
                         </div>
 
@@ -133,7 +200,7 @@ $atts = $args['attributes'] ?? array();
                                     <label class="guest-label">Adults</label>
                                     <div class="guest-counter">
                                         <button type="button" class="counter-btn minus" data-target="adults">-</button>
-                                        <span class="counter-value" id="adults-count">1</span>
+                                        <span class="counter-value" id="adults-count"><?php echo $is_test_mode ? esc_html($test_data['adults']) : '1'; ?></span>
                                         <button type="button" class="counter-btn plus" data-target="adults">+</button>
                                     </div>
                                 </div>
@@ -143,7 +210,7 @@ $atts = $args['attributes'] ?? array();
                                     <label class="guest-label">Children (4+ years)</label>
                                     <div class="guest-counter">
                                         <button type="button" class="counter-btn minus" data-target="children">-</button>
-                                        <span class="counter-value" id="children-count">0</span>
+                                        <span class="counter-value" id="children-count"><?php echo $is_test_mode ? esc_html($test_data['children']) : '0'; ?></span>
                                         <button type="button" class="counter-btn plus" data-target="children">+</button>
                                     </div>
                                 </div>
@@ -153,15 +220,15 @@ $atts = $args['attributes'] ?? array();
                                     <label class="guest-label">Baby (0-3 years)</label>
                                     <div class="guest-counter">
                                         <button type="button" class="counter-btn minus" data-target="babies">-</button>
-                                        <span class="counter-value" id="babies-count">0</span>
+                                        <span class="counter-value" id="babies-count"><?php echo $is_test_mode ? esc_html($test_data['babies']) : '0'; ?></span>
                                         <button type="button" class="counter-btn plus" data-target="babies">+</button>
                                     </div>
                                 </div>
                                 
                                 <!-- Hidden inputs -->
-                                <input type="hidden" id="adults" name="adults" value="1" />
-                                <input type="hidden" id="children" name="children" value="0" />
-                                <input type="hidden" id="babies" name="babies" value="0" />
+                                <input type="hidden" id="adults" name="adults" value="<?php echo $is_test_mode ? esc_attr($test_data['adults']) : '1'; ?>" />
+                                <input type="hidden" id="children" name="children" value="<?php echo $is_test_mode ? esc_attr($test_data['children']) : '0'; ?>" />
+                                <input type="hidden" id="babies" name="babies" value="<?php echo $is_test_mode ? esc_attr($test_data['babies']) : '0'; ?>" />
                             </div>
 
                             <!-- What's Included Section -->
@@ -380,29 +447,33 @@ $atts = $args['attributes'] ?? array();
                             
                             <div class="form-fields">
                                 <div class="form-field">
-                                    <input type="text" id="full-name" name="full_name" placeholder="Full name" required />
+                                    <input type="text" id="full-name" name="full_name" placeholder="Full name" 
+                                           value="<?php echo $is_test_mode ? esc_attr($test_data['full_name']) : ''; ?>" required />
                                 </div>
                                 
                                 <div class="form-field">
-                                    <input type="email" id="email" name="email" placeholder="Email address" required />
+                                    <input type="email" id="email" name="email" placeholder="Email address" 
+                                           value="<?php echo $is_test_mode ? esc_attr($test_data['email']) : ''; ?>" required />
                                 </div>
                                 
                                 <div class="form-field">
-                                    <input type="tel" id="contact-number" name="contact_number" placeholder="Contact number" required />
+                                    <input type="tel" id="contact-number" name="contact_number" placeholder="Contact number" 
+                                           value="<?php echo $is_test_mode ? esc_attr($test_data['contact_number']) : ''; ?>" required />
                                 </div>
                                 
                                 <div class="form-field">
-                                    <input type="text" id="home-address" name="home_address" placeholder="Home address" required />
+                                    <input type="text" id="home-address" name="home_address" placeholder="Home address" 
+                                           value="<?php echo $is_test_mode ? esc_attr($test_data['home_address']) : ''; ?>" />
                                 </div>
                                 
                                 <div class="form-field">
-                                    <select id="country" name="country" required>
+                                    <select id="country" name="country">
                                         <option value="">Country of residence</option>
                                         <option value="US">United States</option>
                                         <option value="UK">United Kingdom</option>
                                         <option value="CA">Canada</option>
                                         <option value="AU">Australia</option>
-                                        <option value="ZA">South Africa</option>
+                                        <option value="ZA" <?php echo ($is_test_mode && $test_data['country'] === 'ZA') ? 'selected' : ''; ?>>South Africa</option>
                                         <option value="DE">Germany</option>
                                         <option value="FR">France</option>
                                         <option value="IT">Italy</option>
@@ -435,7 +506,7 @@ $atts = $args['attributes'] ?? array();
                             <div class="select-wrapper">
                                 <select name="how_heard" id="how-heard">
                                     <option value="">Please select</option>
-                                    <option value="google">Google Search</option>
+                                    <option value="google" <?php echo ($is_test_mode && $test_data['how_heard'] === 'google') ? 'selected' : ''; ?>>Google Search</option>
                                     <option value="social_media">Social Media</option>
                                     <option value="travel_agent">Travel Agent</option>
                                     <option value="word_of_mouth">Word of Mouth</option>
@@ -453,7 +524,7 @@ $atts = $args['attributes'] ?? array();
                             <div class="form-field">
                                 <textarea name="special_requests" id="special-requests" 
                                           placeholder="Anything else you'd like us to know?"
-                                          rows="4"></textarea>
+                                          rows="4"><?php echo $is_test_mode ? esc_textarea($test_data['special_requests']) : ''; ?></textarea>
                             </div>
                         </div>
 
@@ -464,7 +535,7 @@ $atts = $args['attributes'] ?? array();
                             <div class="form-field">
                                 <textarea name="children_interests" id="children-interests" 
                                           placeholder="What do they love? Stargazing, horses, camping, quad biking?"
-                                          rows="3"></textarea>
+                                          rows="3"><?php echo $is_test_mode ? esc_textarea($test_data['children_interests']) : ''; ?></textarea>
                             </div>
                         </div>
 
@@ -481,7 +552,7 @@ $atts = $args['attributes'] ?? array();
                                 BACK
                             </button>
                             <button type="submit" class="btn btn-primary submit-btn" id="submit-booking">
-                                SUBMIT
+                                <?php echo $is_test_mode ? '🧪 SUBMIT TEST BOOKING' : 'SUBMIT'; ?>
                             </button>
                         </div>
                     </div>
@@ -502,6 +573,11 @@ $atts = $args['attributes'] ?? array();
                 <!-- Hidden fields -->
                 <input type="hidden" name="action" value="submit_booking_request">
                 <input type="hidden" name="nonce" value="<?php echo wp_create_nonce('leobo_booking_system_nonce'); ?>">
+                <input type="hidden" name="accommodation" value="Observatory Villa">
+                <input type="hidden" name="calculated_total" value="0" id="calculated-total-field">
+                <?php if ($is_test_mode): ?>
+                <input type="hidden" name="is_test_submission" value="1">
+                <?php endif; ?>
                 
             </form>
         </div>
@@ -509,6 +585,14 @@ $atts = $args['attributes'] ?? array();
         <!-- Sidebar Summary -->
         <div class="booking-sidebar">
             <div class="sidebar-content">
+                
+                <?php if ($is_test_mode): ?>
+                <!-- Test Mode Indicator -->
+                <div class="test-mode-indicator">
+                    <div class="test-mode-badge">🧪 TEST MODE</div>
+                    <p class="test-mode-text"><?php echo $is_embedded_admin ? 'Admin test form' : 'Form pre-filled with test data'; ?></p>
+                </div>
+                <?php endif; ?>
                 
                 <!-- Guests Summary -->
                 <div class="summary-section">
@@ -649,3 +733,569 @@ $atts = $args['attributes'] ?? array();
     </div>
     
 </div>
+
+<?php if ($is_test_mode): ?>
+<style>
+/* Test Mode Styling */
+.test-mode-panel {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border: 2px solid #d4b896;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.test-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(212, 184, 150, 0.1);
+}
+
+.test-badge {
+    background: #d4b896;
+    color: #1a1a1a;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.test-info {
+    flex: 1;
+    color: #d4b896;
+    font-size: 14px;
+}
+
+.test-panel-toggle {
+    background: rgba(212, 184, 150, 0.2);
+    border: 1px solid rgba(212, 184, 150, 0.3);
+    color: #d4b896;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+.test-panel-toggle:hover {
+    background: rgba(212, 184, 150, 0.3);
+    transform: translateY(-1px);
+}
+
+.test-panel-controls {
+    padding: 20px;
+    border-top: 1px solid rgba(212, 184, 150, 0.2);
+    display: none;
+}
+
+.test-panel-controls.active {
+    display: block;
+}
+
+.test-controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+}
+
+.test-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.test-control-group label {
+    color: #d4b896;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.test-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.test-btn {
+    background: rgba(212, 184, 150, 0.1);
+    border: 1px solid rgba(212, 184, 150, 0.3);
+    color: #d4b896;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.test-btn:hover {
+    background: rgba(212, 184, 150, 0.2);
+    border-color: #d4b896;
+    transform: translateY(-1px);
+}
+
+.test-btn-small {
+    background: rgba(212, 184, 150, 0.1);
+    border: 1px solid rgba(212, 184, 150, 0.3);
+    color: #d4b896;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 32px;
+}
+
+.test-btn-small:hover {
+    background: rgba(212, 184, 150, 0.2);
+    transform: translateY(-1px);
+}
+
+.leobo-booking-wrapper.test-mode-active {
+    border: 2px solid rgba(212, 184, 150, 0.3);
+    border-radius: 8px;
+    background: linear-gradient(45deg, rgba(212, 184, 150, 0.02) 0%, transparent 100%);
+}
+
+.test-mode-indicator {
+    background: rgba(212, 184, 150, 0.1);
+    border: 1px solid rgba(212, 184, 150, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.test-mode-badge {
+    background: #d4b896;
+    color: #1a1a1a;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 5px;
+}
+
+.test-mode-text {
+    color: #d4b896;
+    font-size: 12px;
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* Enhanced submit button for test mode */
+.test-mode-active #submit-booking {
+    background: linear-gradient(135deg, #d4b896 0%, #b8a082 100%);
+    border: 2px solid #d4b896;
+    position: relative;
+    overflow: hidden;
+    font-weight: 600;
+}
+
+.test-mode-active #submit-booking:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 184, 150, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .test-controls-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .test-panel-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .test-controls-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .test-buttons {
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+// Test Mode JavaScript - Store original test data
+const originalTestData = <?php echo json_encode($test_data); ?>;
+const isTestMode = <?php echo $is_test_mode ? 'true' : 'false'; ?>;
+const isEmbeddedAdmin = <?php echo $is_embedded_admin ? 'true' : 'false'; ?>;
+
+// Test panel toggle
+function toggleTestPanel() {
+    const controls = document.getElementById('test-panel-controls');
+    const toggle = document.querySelector('.test-panel-toggle');
+    const icon = toggle.querySelector('.toggle-icon');
+    
+    if (controls.classList.contains('active')) {
+        controls.classList.remove('active');
+        icon.textContent = '▼';
+    } else {
+        controls.classList.add('active');
+        icon.textContent = '▲';
+    }
+}
+
+// Fill form with test data
+function fillTestData() {
+    if (!isTestMode) return;
+    
+    // Fill dates
+    document.getElementById('arrival-date').value = originalTestData.checkin_date;
+    document.getElementById('departure-date').value = originalTestData.checkout_date;
+    
+    // Fill guests
+    document.getElementById('adults').value = originalTestData.adults;
+    document.getElementById('children').value = originalTestData.children;
+    document.getElementById('babies').value = originalTestData.babies;
+    document.getElementById('adults-count').textContent = originalTestData.adults;
+    document.getElementById('children-count').textContent = originalTestData.children;
+    document.getElementById('babies-count').textContent = originalTestData.babies;
+    
+    // Fill guest info
+    document.getElementById('full-name').value = originalTestData.full_name;
+    document.getElementById('email').value = originalTestData.email;
+    document.getElementById('contact-number').value = originalTestData.contact_number;
+    document.getElementById('home-address').value = originalTestData.home_address;
+    document.getElementById('country').value = originalTestData.country;
+    document.getElementById('how-heard').value = originalTestData.how_heard;
+    document.getElementById('special-requests').value = originalTestData.special_requests;
+    document.getElementById('children-interests').value = originalTestData.children_interests;
+    
+    showTestNotification('✅ Test data filled successfully!', 'success');
+}
+
+// Randomize test data
+function randomizeTestData() {
+    if (!isTestMode) return;
+    
+    // Generate random dates (next 15-60 days)
+    const today = new Date();
+    const checkinDays = Math.floor(Math.random() * 45) + 15;
+    const stayDays = Math.floor(Math.random() * 7) + 2;
+    
+    const checkinDate = new Date(today);
+    checkinDate.setDate(today.getDate() + checkinDays);
+    
+    const checkoutDate = new Date(checkinDate);
+    checkoutDate.setDate(checkinDate.getDate() + stayDays);
+    
+    // Random guest counts
+    const adults = Math.floor(Math.random() * 8) + 1;
+    const children = Math.floor(Math.random() * 4);
+    const babies = Math.floor(Math.random() * 2);
+    
+    // Random names
+    const firstNames = ['Alex', 'Sarah', 'Michael', 'Emma', 'David', 'Lisa', 'Chris', 'Anna'];
+    const lastNames = ['Safari-Test', 'Adventure-Seeker', 'Game-Viewer', 'Wildlife-Explorer', 'Bush-Walker'];
+    const countries = ['US', 'UK', 'CA', 'AU', 'DE', 'FR', 'ZA', 'NL'];
+    const hearAbout = ['google', 'social_media', 'travel_agent', 'word_of_mouth', 'magazine'];
+    
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const country = countries[Math.floor(Math.random() * countries.length)];
+    const hearSource = hearAbout[Math.floor(Math.random() * hearAbout.length)];
+    
+    // Update form fields
+    document.getElementById('arrival-date').value = formatDateForInput(checkinDate);
+    document.getElementById('departure-date').value = formatDateForInput(checkoutDate);
+    
+    document.getElementById('adults').value = adults;
+    document.getElementById('children').value = children;
+    document.getElementById('babies').value = babies;
+    document.getElementById('adults-count').textContent = adults;
+    document.getElementById('children-count').textContent = children;
+    document.getElementById('babies-count').textContent = babies;
+    
+    document.getElementById('full-name').value = `${firstName} ${lastName}`;
+    document.getElementById('email').value = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`;
+    document.getElementById('contact-number').value = `+27 ${Math.floor(Math.random() * 90) + 10} ${Math.floor(Math.random() * 900) + 100} ${Math.floor(Math.random() * 9000) + 1000}`;
+    document.getElementById('home-address').value = `${Math.floor(Math.random() * 999) + 1} Test Street, ${firstName} City`;
+    document.getElementById('country').value = country;
+    document.getElementById('how-heard').value = hearSource;
+    document.getElementById('special-requests').value = `Randomized test booking for ${firstName} ${lastName}. This is a test submission with random data for system testing purposes.`;
+    
+    showTestNotification('🎲 Test data randomized!', 'success');
+}
+
+// Clear form data
+function clearFormData() {
+    if (!isTestMode) return;
+    
+    // Clear all form fields
+    document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, select').forEach(field => {
+        field.value = '';
+    });
+    
+    // Reset counters
+    document.getElementById('adults-count').textContent = '1';
+    document.getElementById('children-count').textContent = '0';
+    document.getElementById('babies-count').textContent = '0';
+    document.getElementById('adults').value = '1';
+    document.getElementById('children').value = '0';
+    document.getElementById('babies').value = '0';
+    
+    // Uncheck all checkboxes and radios
+    document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(field => {
+        field.checked = false;
+    });
+    
+    showTestNotification('🗑️ Form cleared!', 'info');
+}
+
+// Jump to specific step
+function goToStep(stepNumber) {
+    if (!isTestMode) return;
+    
+    // Hide all steps
+    document.querySelectorAll('.booking-step').forEach(step => {
+        step.classList.remove('active');
+    });
+    
+    // Show target step
+    document.querySelector(`.booking-step-${stepNumber}`).classList.add('active');
+    
+    // Update progress
+    document.querySelectorAll('.progress-step').forEach((step, index) => {
+        if (index + 1 <= stepNumber) {
+            step.classList.add('active');
+        } else {
+            step.classList.remove('active');
+        }
+    });
+    
+    showTestNotification(`📍 Jumped to step ${stepNumber}`, 'info');
+}
+
+// Test scenarios
+function loadFamilyScenario() {
+    if (!isTestMode) return;
+    
+    document.getElementById('adults').value = '2';
+    document.getElementById('children').value = '2';
+    document.getElementById('babies').value = '1';
+    document.getElementById('adults-count').textContent = '2';
+    document.getElementById('children-count').textContent = '2';
+    document.getElementById('babies-count').textContent = '1';
+    document.getElementById('full-name').value = 'Sarah Family-Test';
+    document.getElementById('email').value = 'sarah.family@example.com';
+    document.getElementById('special-requests').value = 'Family vacation with young children. Please ensure child-friendly activities and safety measures.';
+    document.getElementById('children-interests').value = 'Swimming, animals, stargazing, simple nature walks';
+    showTestNotification('👨‍👩‍👧‍👦 Family scenario loaded!', 'success');
+}
+
+function loadCoupleScenario() {
+    if (!isTestMode) return;
+    
+    document.getElementById('adults').value = '2';
+    document.getElementById('children').value = '0';
+    document.getElementById('babies').value = '0';
+    document.getElementById('adults-count').textContent = '2';
+    document.getElementById('children-count').textContent = '0';
+    document.getElementById('babies-count').textContent = '0';
+    document.getElementById('full-name').value = 'Alex Couple-Test';
+    document.getElementById('email').value = 'alex.couple@example.com';
+    document.getElementById('special-requests').value = 'Romantic getaway for our anniversary. Looking for intimate dining and stargazing experiences.';
+    document.getElementById('children-interests').value = '';
+    showTestNotification('💑 Couple scenario loaded!', 'success');
+}
+
+function loadGroupScenario() {
+    if (!isTestMode) return;
+    
+    document.getElementById('adults').value = '8';
+    document.getElementById('children').value = '0';
+    document.getElementById('babies').value = '0';
+    document.getElementById('adults-count').textContent = '8';
+    document.getElementById('children-count').textContent = '0';
+    document.getElementById('babies-count').textContent = '0';
+    document.getElementById('full-name').value = 'Michael Group-Test';
+    document.getElementById('email').value = 'michael.group@example.com';
+    document.getElementById('special-requests').value = 'Group retreat for 8 friends. Interested in adventure activities, group dining, and team experiences.';
+    document.getElementById('children-interests').value = '';
+    showTestNotification('👥 Group scenario loaded!', 'success');
+}
+
+// Utility functions
+function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function showTestNotification(message, type = 'info') {
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = `test-notification test-notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-message">${message}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    // Style notification
+    const colors = {
+        success: { bg: '#d4edda', border: '#c3e6cb', text: '#155724' },
+        info: { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460' },
+        warning: { bg: '#fff3cd', border: '#ffeaa7', text: '#856404' }
+    };
+    
+    const color = colors[type] || colors.info;
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: ${color.bg};
+        border: 1px solid ${color.border};
+        color: ${color.text};
+        padding: 12px 16px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10001;
+        max-width: 350px;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 3000);
+}
+
+// Animation styles
+const testAnimationStyles = document.createElement('style');
+testAnimationStyles.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .notification-close {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.7;
+        padding: 0;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .notification-close:hover {
+        opacity: 1;
+    }
+`;
+document.head.appendChild(testAnimationStyles);
+
+// Initialize test mode
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== PAGE LOAD DEBUG ===');
+    console.log('Test mode:', isTestMode);
+    console.log('Embedded admin:', isEmbeddedAdmin);
+    
+    // Check initial field values
+    console.log('Initial checkin_date:', document.getElementById('arrival-date')?.value);
+    console.log('Initial checkout_date:', document.getElementById('departure-date')?.value);
+    console.log('Initial adults:', document.getElementById('adults')?.value);
+    console.log('Initial accommodation:', document.querySelector('input[name="accommodation"]')?.value);
+    
+    if (isTestMode) {
+        // Auto-fill test data on page load (only if not in embedded admin mode)
+        setTimeout(() => {
+            fillTestData();
+            const message = isEmbeddedAdmin ? 
+                '🧪 Admin test form ready!' : 
+                '🧪 Test mode activated with pre-filled data!';
+            showTestNotification(message, 'success');
+        }, 500);
+    }
+    
+    // Update calculated total before form submission
+    document.getElementById('leobo-booking-form').addEventListener('submit', function(e) {
+        alert('Form submission intercepted! Check console for details.');
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        
+        // Get the displayed total price and extract numeric value
+        const totalPriceElement = document.getElementById('total-price');
+        if (totalPriceElement) {
+            const totalText = totalPriceElement.textContent || totalPriceElement.innerText;
+            console.log('Total price element text:', totalText);
+            // Extract numeric value from "R 144,500" format
+            const totalValue = totalText.replace(/[^\d]/g, '');
+            console.log('Extracted total value:', totalValue);
+            document.getElementById('calculated-total-field').value = totalValue;
+        } else {
+            console.log('Total price element not found');
+        }
+        
+        // Ensure helicopter selection consistency
+        const helicopterPackageSelected = document.querySelector('input[name="helicopter_package"]:checked');
+        if (helicopterPackageSelected) {
+            console.log('Helicopter package selected:', helicopterPackageSelected.value);
+            // If a helicopter package is selected, make sure helicopter_interested is set to "yes"
+            const helicopterYes = document.getElementById('helicopter-yes');
+            if (helicopterYes) {
+                helicopterYes.checked = true;
+                console.log('Set helicopter_interested to yes');
+            }
+        } else {
+            console.log('No helicopter package selected');
+        }
+        
+        // Debug: Log all form values by field name
+        console.log('=== INDIVIDUAL FIELD VALUES ===');
+        console.log('checkin_date:', document.getElementById('arrival-date')?.value || 'NOT FOUND');
+        console.log('checkout_date:', document.getElementById('departure-date')?.value || 'NOT FOUND');
+        console.log('adults:', document.getElementById('adults')?.value || 'NOT FOUND');
+        console.log('children:', document.getElementById('children')?.value || 'NOT FOUND');
+        console.log('babies:', document.getElementById('babies')?.value || 'NOT FOUND');
+        console.log('full_name:', document.getElementById('full-name')?.value || 'NOT FOUND');
+        console.log('email:', document.getElementById('email')?.value || 'NOT FOUND');
+        console.log('contact_number:', document.getElementById('contact-number')?.value || 'NOT FOUND');
+        console.log('special_requests:', document.getElementById('special-requests')?.value || 'NOT FOUND');
+        console.log('calculated_total:', document.getElementById('calculated-total-field')?.value || 'NOT FOUND');
+        
+        // Debug: Log complete form data
+        console.log('=== COMPLETE FORM DATA ===');
+        const formData = new FormData(this);
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: "${value}"`);
+        }
+        
+        console.log('=== END FORM SUBMISSION DEBUG ===');
+    });
+});
+</script>
+<?php endif; ?>

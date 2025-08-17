@@ -19,7 +19,7 @@ $data = $args['booking_data'];
     </div>
     
     <div style="padding: 30px; background: white;">
-        <h2>Thank you, <?php echo esc_html($data['first_name']); ?>!</h2>
+        <h2>Thank you, <?php echo esc_html($data['full_name']); ?>!</h2>
         
         <p>We have received your booking request and will contact you within 24 hours to confirm availability.</p>
         
@@ -27,7 +27,13 @@ $data = $args['booking_data'];
             <h3 style="margin-top: 0;">Booking Summary</h3>
             <p><strong>Booking Reference:</strong> #<?php echo esc_html($booking_id); ?></p>
             <p><strong>Dates:</strong> <?php echo esc_html(date('F j', strtotime($data['checkin_date']))); ?> - <?php echo esc_html(date('F j, Y', strtotime($data['checkout_date']))); ?></p>
-            <p><strong>Guests:</strong> <?php echo esc_html($data['guests']); ?></p>
+            <p><strong>Adults:</strong> <?php echo esc_html($data['adults']); ?></p>
+            <?php if (!empty($data['children'])): ?>
+            <p><strong>Children:</strong> <?php echo esc_html($data['children']); ?></p>
+            <?php endif; ?>
+            <?php if (!empty($data['babies'])): ?>
+            <p><strong>Babies:</strong> <?php echo esc_html($data['babies']); ?></p>
+            <?php endif; ?>
             <p><strong>Accommodation:</strong> <?php echo esc_html($data['accommodation']); ?></p>
             <p><strong>Estimated Total:</strong> R <?php echo esc_html(number_format($data['calculated_total'], 2)); ?></p>
         </div>

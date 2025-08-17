@@ -1621,11 +1621,64 @@ class LeoboBookingForm {
     }
     
     prepareSubmissionData() {
-        return {
+        // Check if this is a test mode submission
+        const isTestMode = document.querySelector('input[name="is_test_submission"]')?.value === '1' || 
+                          this.formData.contact['full-name']?.includes('Test') ||
+                          document.getElementById('full-name')?.value?.includes('Test');
+        
+        // Collect transfer options
+        const transferOptions = [];
+        document.querySelectorAll('input[name="transfer[]"]:checked').forEach(input => {
+            transferOptions.push(input.value);
+        });
+        
+        // Collect experiences
+        const experiences = [];
+        document.querySelectorAll('input[name="experiences[]"]:checked').forEach(input => {
+            experiences.push(input.value);
+        });
+        
+        const submissionData = {
             action: 'submit_booking_request',
             nonce: window.leobo_booking_system?.nonce || '',
-            ...this.formData
+            // Flatten the nested formData structure to match PHP expectations
+            checkin_date: this.formData.dates.checkin,
+            checkout_date: this.formData.dates.checkout,
+            adults: this.formData.guests.adults,
+            children: this.formData.guests.children,
+            babies: this.formData.guests.babies,
+            accommodation: 'Observatory Villa',
+            helicopter_package: this.formData.extras.helicopter_package,
+            transfer: transferOptions, // Array of selected transfer options
+            experiences: experiences, // Array of selected experiences
+            occasion: this.formData.extras.occasion || document.getElementById('occasion')?.value || '',
+            flexible_dates: document.getElementById('flexible-dates')?.checked ? '1' : '0',
+            full_name: this.formData.contact['full-name'] || document.getElementById('full-name')?.value,
+            email: this.formData.contact['email'] || document.getElementById('email')?.value,
+            contact_number: this.formData.contact['contact-number'] || document.getElementById('contact-number')?.value,
+            home_address: this.formData.contact['home-address'] || document.getElementById('home-address')?.value || '',
+            country: this.formData.contact['country'] || document.getElementById('country')?.value || '',
+            how_heard: this.formData.contact['how-heard'] || document.getElementById('how-heard')?.value || '',
+            special_requests: document.getElementById('special-requests')?.value || '',
+            children_interests: document.getElementById('children-interests')?.value || '',
+            calculated_total: this.formData.pricing.total || 0
         };
+        
+        // Add test submission flag if detected
+        if (isTestMode) {
+            submissionData.is_test_submission = '1';
+        }
+        
+        // Add debugging
+        console.log('=== EXTERNAL JS SUBMISSION DATA ===');
+        console.log('Is Test Mode:', isTestMode);
+        console.log('Transfer options:', transferOptions);
+        console.log('Experiences:', experiences);
+        console.log('Raw this.formData:', this.formData);
+        console.log('Flattened submissionData:', submissionData);
+        console.log('=== END EXTERNAL JS DEBUG ===');
+        
+        return submissionData;
     }
     
     sendFormData(data) {

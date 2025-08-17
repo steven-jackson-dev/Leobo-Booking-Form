@@ -37,7 +37,14 @@ require_once LEOBO_CUSTOM_BOOKING_PATH . '/CustomBookingSystem.php';
 add_action('init', 'leobo_custom_booking_init');
 
 function leobo_custom_booking_init() {
-    // System is automatically initialized when classes are instantiated
+    // Prevent multiple instantiation
+    if (!class_exists('LeoboCustomBookingSystem') || isset($GLOBALS['leobo_booking_system'])) {
+        return;
+    }
+    
+    // Initialize the system once
+    $GLOBALS['leobo_booking_system'] = new LeoboCustomBookingSystem();
+    
     do_action('leobo_custom_booking_loaded');
 }
 
@@ -91,6 +98,13 @@ function leobo_custom_booking_is_configured() {
     }
     
     return true;
+}
+
+/**
+ * Get the singleton instance of the booking system
+ */
+function leobo_get_booking_system() {
+    return isset($GLOBALS['leobo_booking_system']) ? $GLOBALS['leobo_booking_system'] : null;
 }
 
 /**

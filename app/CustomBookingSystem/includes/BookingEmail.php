@@ -7,7 +7,7 @@
  * @version 1.0.0
  */
 
-class LeoboBookingEmail {
+class BookingEmail {
     
     private $template_path;
     
@@ -18,41 +18,53 @@ class LeoboBookingEmail {
     /**
      * Send admin notification email
      */
-    public function send_admin_notification($booking_id, $booking_data) {
-        $subject = 'New Booking Request #' . $booking_id . ' - Leobo Private Reserve';
+    public function send_admin_notification($booking_id, $booking_data, $prefix = '') {
+        $subject = $prefix . ' New Booking Request #' . $booking_id . ' - Leobo Private Reserve';
         $message = $this->get_email_template('admin-notification', array(
             'booking_id' => $booking_id,
-            'booking_data' => $booking_data
+            'booking_data' => $booking_data,
+            'prefix' => $prefix
         ));
         
         $headers = array('Content-Type: text/html; charset=UTF-8');
         
-        return wp_mail(
+        error_log('Sending admin notification email to: ' . apply_filters('leobo_booking_admin_email', 'reservations@leobo.co.za'));
+        
+        $result = wp_mail(
             apply_filters('leobo_booking_admin_email', 'reservations@leobo.co.za'),
             $subject,
             $message,
             $headers
         );
+        
+        error_log('Admin email send result: ' . ($result ? 'SUCCESS' : 'FAILED'));
+        return $result;
     }
     
     /**
      * Send user confirmation email
      */
-    public function send_user_confirmation($booking_id, $booking_data) {
-        $subject = 'Booking Request Received - Leobo Private Reserve';
+    public function send_user_confirmation($booking_id, $booking_data, $prefix = '') {
+        $subject = $prefix . ' Booking Request Received - Leobo Private Reserve';
         $message = $this->get_email_template('user-confirmation', array(
             'booking_id' => $booking_id,
-            'booking_data' => $booking_data
+            'booking_data' => $booking_data,
+            'prefix' => $prefix
         ));
         
         $headers = array('Content-Type: text/html; charset=UTF-8');
         
-        return wp_mail(
+        error_log('Sending user confirmation email to: ' . $booking_data['email']);
+        
+        $result = wp_mail(
             $booking_data['email'],
             $subject,
             $message,
             $headers
         );
+        
+        error_log('User email send result: ' . ($result ? 'SUCCESS' : 'FAILED'));
+        return $result;
     }
     
     /**
@@ -126,10 +138,17 @@ class LeoboBookingEmail {
         $content .= "<p>Booking Reference: #{$booking_id}</p>";
         
         if (!empty($booking_data)) {
-            $content .= "<p>Guest: " . esc_html($booking_data['first_name'] ?? '') . " " . esc_html($booking_data['last_name'] ?? '') . "</p>";
+            $content .= "<p>Guest: " . esc_html($booking_data['full_name'] ?? '') . "</p>";
             $content .= "<p>Email: " . esc_html($booking_data['email'] ?? '') . "</p>";
             $content .= "<p>Check-in: " . esc_html($booking_data['checkin_date'] ?? '') . "</p>";
             $content .= "<p>Check-out: " . esc_html($booking_data['checkout_date'] ?? '') . "</p>";
+            $content .= "<p>Adults: " . esc_html($booking_data['adults'] ?? '') . "</p>";
+            if (!empty($booking_data['children'])) {
+                $content .= "<p>Children: " . esc_html($booking_data['children']) . "</p>";
+            }
+            if (!empty($booking_data['special_requests'])) {
+                $content .= "<p>Special Requests: " . esc_html($booking_data['special_requests']) . "</p>";
+            }
         }
         
         return $content;
