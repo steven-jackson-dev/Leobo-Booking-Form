@@ -103,7 +103,7 @@ class LeoboCustomBookingSystem {
             'leobo-booking-form',
             $this->plugin_url . '/assets/js/booking-form.js',
             array('jquery'),
-            '3.3.0', // Updated for seasonal calendar and removed blocked dates
+            '3.9.3', // Enhanced blocked dates debugging
             true
         );
         
@@ -112,12 +112,18 @@ class LeoboCustomBookingSystem {
             'leobo-booking-form-styles',
             $this->plugin_url . '/assets/css/booking-form-styles.css',
             array(),
-            '3.3.2' // Updated to remove min-height from booking-content-wrapper
+            '3.9.3' // Enhanced blocked dates debugging
         );
         
         // Localize script
         try {
             $frontend_data = $this->pricing->get_frontend_data();
+            $blocked_dates = $this->get_blocked_dates_for_frontend();
+            
+            // Debug: Log what blocked dates are being sent to frontend
+            error_log('=== Script Localization ===');
+            error_log('Blocked dates being sent to frontend (' . count($blocked_dates) . ' total): ' . print_r($blocked_dates, true));
+            
             wp_localize_script('leobo-booking-form', 'leobo_booking_system', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('leobo_booking_system_nonce'),
@@ -126,13 +132,13 @@ class LeoboCustomBookingSystem {
                 'packages' => $frontend_data['packages'] ?? array(),
                 'seasons' => $frontend_data['seasons'] ?? array(),
                 'guest_rules' => $frontend_data['guest_rules'] ?? array(),
-                'blocked_dates' => array(), // Removed blocked dates as requested
+                'blocked_dates' => $blocked_dates,
                 'season_dates' => $this->get_season_dates_for_calendar(),
                 'acf_config' => array(
-                    'adults_max' => get_field('max_adults', 'option') ?: 12,
+                    'adults_max' => get_field('max_adults', 'option') ?: 6,  // Maximum 6 adults in house
                     'children_max' => get_field('max_children', 'option') ?: 8,
                     'babies_max' => get_field('max_babies', 'option') ?: 4,
-                    'minimum_nights_standard' => get_field('default_min_nights', 'option') ?: 3
+                    'minimum_nights_standard' => get_field('default_min_nights', 'option') ?: 2  // Minimum 2 nights
                 )
             ));
         } catch (Exception $e) {
@@ -148,10 +154,10 @@ class LeoboCustomBookingSystem {
                 'guest_rules' => array(),
                 'blocked_dates' => array(),
                 'acf_config' => array(
-                    'adults_max' => 12,
+                    'adults_max' => 6,  // Maximum 6 adults in house
                     'children_max' => 8,
                     'babies_max' => 4,
-                    'minimum_nights_standard' => 3
+                    'minimum_nights_standard' => 2  // Minimum 2 nights
                 )
             ));
         }
@@ -223,6 +229,12 @@ class LeoboCustomBookingSystem {
             
             if ($checkin_date >= $checkout_date) {
                 wp_send_json_error('Check-out date must be after check-in date');
+                return;
+            }
+            
+            // Validate availability
+            if (!$this->validate_availability($checkin, $checkout)) {
+                wp_send_json_error('Selected dates are not available. Please choose different dates.');
                 return;
             }
             
@@ -322,14 +334,166 @@ class LeoboCustomBookingSystem {
         $end_date = new DateTime($checkout);
         $current_date = clone $start_date;
         
-        while ($current_date < $end_date) {
-            if (!$leobo_booking_availability->is_date_available($current_date->format('Y-m-d'))) {
-                return false;
+        // Check if there's test data active
+        $test_data = get_transient('leobo_test_blocked_dates');
+        if ($test_data && isset($test_data['api_response']['availability_data'])) {
+            // Use test data for validation
+            while ($current_date < $end_date) {
+                $date_string = $current_date->format('Y-m-d');
+                
+                // Check test blocked dates
+                foreach ($test_data['api_response']['availability_data'] as $room_data) {
+                    if (isset($room_data[$date_string]) && $room_data[$date_string]['availability'] == 0) {
+                        return false; // Date is blocked in test data
+                    }
+                }
+                
+                $current_date->add(new DateInterval('P1D'));
             }
-            $current_date->add(new DateInterval('P1D'));
+        } else {
+            // Use live availability data
+            while ($current_date < $end_date) {
+                if (!$leobo_booking_availability->is_date_available($current_date->format('Y-m-d'))) {
+                    return false;
+                }
+                $current_date->add(new DateInterval('P1D'));
+            }
         }
         
         return true;
+    }
+    
+    /**
+     * Get blocked dates for JavaScript including test data if active
+     * Note: Last day of consecutive blocked periods is made available for check-in
+     */
+    private function get_blocked_dates_for_frontend() {
+        // Debug: Log what we're checking
+        error_log('=== get_blocked_dates_for_frontend() called ===');
+        
+        // Check if test data is active first
+        $test_data = get_transient('leobo_test_blocked_dates');
+        
+        // Debug: Log test data status
+        if ($test_data) {
+            error_log('✅ Test data found! Processing test blocked dates...');
+            error_log('Test data structure: ' . print_r($test_data, true));
+        } else {
+            error_log('❌ No test data found, will use live API data');
+        }
+        
+        if ($test_data && isset($test_data['api_response']['availability_data'])) {
+            // Extract blocked dates from test API response
+            $raw_blocked_dates = array();
+            
+            error_log('Processing test API response data...');
+            foreach ($test_data['api_response']['availability_data'] as $room_index => $room_data) {
+                error_log("Processing room data index {$room_index}:");
+                
+                foreach ($room_data as $date => $availability) {
+                    // Skip non-date keys
+                    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                        error_log("Skipping non-date key: {$date}");
+                        continue;
+                    }
+                    
+                    error_log("Checking date {$date}: availability = " . ($availability['availability'] ?? 'N/A'));
+                    
+                    // Collect dates where availability is 0
+                    if (isset($availability['availability']) && $availability['availability'] == 0) {
+                        $raw_blocked_dates[] = $date;
+                        error_log("🔴 Date {$date} collected as blocked (availability = 0)");
+                    } else {
+                        error_log("🟢 Date {$date} available (availability = " . ($availability['availability'] ?? 'N/A') . ")");
+                    }
+                }
+            }
+            
+            // Sort and deduplicate
+            $raw_blocked_dates = array_unique($raw_blocked_dates);
+            sort($raw_blocked_dates);
+            
+            // Process to allow check-in on last day of consecutive blocked periods
+            $final_blocked_dates = $this->process_blocked_periods($raw_blocked_dates);
+            
+            error_log('✅ Final test blocked dates after processing (' . count($final_blocked_dates) . ' total): ' . print_r($final_blocked_dates, true));
+            return $final_blocked_dates;
+        }
+        
+        // Fall back to live API data
+        error_log('📡 Using live API data...');
+        global $leobo_booking_availability;
+        $live_blocked_dates = $leobo_booking_availability->get_blocked_dates(1, 'Y-m-d'); // API returns all dates regardless of range
+        error_log('Live blocked dates (' . count($live_blocked_dates) . ' total): ' . print_r($live_blocked_dates, true));
+        return $live_blocked_dates;
+    }
+    
+    /**
+     * Process blocked dates to allow check-in on the last day of consecutive periods
+     * (Same logic as in BookingAvailability.php)
+     */
+    private function process_blocked_periods($blocked_dates, $format = 'Y-m-d') {
+        if (empty($blocked_dates)) {
+            return array();
+        }
+        
+        $final_blocked = array();
+        $consecutive_periods = $this->group_consecutive_dates($blocked_dates);
+        
+        foreach ($consecutive_periods as $period) {
+            // For each consecutive period, block all dates except the last one
+            // The last day becomes available for new check-ins (guests check out in morning)
+            if (count($period) > 1) {
+                // Remove the last date from blocking (allow check-in on checkout day)
+                $period_to_block = array_slice($period, 0, -1);
+                foreach ($period_to_block as $date) {
+                    $final_blocked[] = date($format, strtotime($date));
+                }
+            }
+            // If it's a single day block, we still block it completely
+            // (no one can check in or out on the same day)
+            else {
+                foreach ($period as $date) {
+                    $final_blocked[] = date($format, strtotime($date));
+                }
+            }
+        }
+        
+        return array_unique($final_blocked);
+    }
+    
+    /**
+     * Group consecutive dates into periods
+     * (Same logic as in BookingAvailability.php)
+     */
+    private function group_consecutive_dates($dates) {
+        if (empty($dates)) {
+            return array();
+        }
+        
+        sort($dates);
+        $periods = array();
+        $current_period = array($dates[0]);
+        
+        for ($i = 1; $i < count($dates); $i++) {
+            $prev_date = new DateTime($dates[$i - 1]);
+            $curr_date = new DateTime($dates[$i]);
+            $diff = $prev_date->diff($curr_date)->days;
+            
+            if ($diff === 1) {
+                // Consecutive date, add to current period
+                $current_period[] = $dates[$i];
+            } else {
+                // Gap found, start new period
+                $periods[] = $current_period;
+                $current_period = array($dates[$i]);
+            }
+        }
+        
+        // Add the last period
+        $periods[] = $current_period;
+        
+        return $periods;
     }
     
     /**
@@ -337,7 +501,7 @@ class LeoboCustomBookingSystem {
      */
     private function get_blocked_dates_js_format() {
         global $wpdb, $leobo_booking_availability;
-        return $leobo_booking_availability->get_blocked_dates(12, 'Y-m-d');
+        return $leobo_booking_availability->get_blocked_dates(1, 'Y-m-d'); // API returns all dates regardless of range
     }
     
     /**
@@ -501,6 +665,15 @@ class LeoboCustomBookingSystem {
             'manage_options',                // Capability
             'leobo-booking-api-status',     // Menu slug
             array($this, 'api_status_page') // Function
+        );
+        
+        add_submenu_page(
+            'leobo-booking-system',          // Parent slug
+            'API Testing',                   // Page title
+            'API Testing',                   // Menu title
+            'manage_options',                // Capability
+            'leobo-booking-api-testing',    // Menu slug
+            array($this, 'api_testing_page') // Function
         );
         
         add_submenu_page(
@@ -916,18 +1089,205 @@ define('WP_DEBUG_LOG', true);</code></pre>
                         <p><strong>Test Result:</strong> <?php echo ucfirst($test_result['status']); ?></p>
                         
                         <?php if (isset($test_result['response_data']) && !empty($test_result['response_data'])): ?>
-                            <h4>API Response Data:</h4>
-                            <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: auto;">
-                                <pre style="margin: 0; white-space: pre-wrap;"><?php echo esc_html(print_r($test_result['response_data'], true)); ?></pre>
+                            
+                            <!-- Summary Stats -->
+                            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin: 15px 0;">
+                                <h4 style="margin-top: 0;">📊 API Response Summary</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                    <div>
+                                        <strong>Response Time:</strong> <?php echo $test_result['response_time_ms']; ?>ms<br>
+                                        <strong>Data Received:</strong> <?php echo $test_result['data_received'] ? 'Yes' : 'No'; ?><br>
+                                        <strong>Valid Data:</strong> <?php echo $test_result['has_availability_data'] ? 'Yes' : 'No'; ?><br>
+                                        <strong>Tested at:</strong> <?php echo $test_result['timestamp']; ?>
+                                    </div>
+                                    
+                                    <?php 
+                                    // Calculate availability stats
+                                    $total_dates = 0;
+                                    $blocked_dates = 0;
+                                    $available_dates = 0;
+                                    $provisional_bookings = 0;
+                                    $confirmed_bookings = 0;
+                                    
+                                    if (isset($test_result['response_data']['availability_data'])) {
+                                        foreach ($test_result['response_data']['availability_data'] as $room_data) {
+                                            foreach ($room_data as $key => $data) {
+                                                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $key) && is_array($data)) {
+                                                    $total_dates++;
+                                                    if (isset($data['availability'])) {
+                                                        if ($data['availability'] == 0) {
+                                                            $blocked_dates++;
+                                                        } else {
+                                                            $available_dates++;
+                                                        }
+                                                    }
+                                                    if (isset($data['Prov'])) {
+                                                        $provisional_bookings += (int)$data['Prov'];
+                                                    }
+                                                    if (isset($data['Conf'])) {
+                                                        $confirmed_bookings += (int)$data['Conf'];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                    
+                                    <div>
+                                        <strong>Total Dates:</strong> <?php echo $total_dates; ?><br>
+                                        <strong style="color: #dc3545;">Blocked Dates:</strong> <?php echo $blocked_dates; ?><br>
+                                        <strong style="color: #28a745;">Available Dates:</strong> <?php echo $available_dates; ?><br>
+                                        <strong>Room Type:</strong> 
+                                        <?php 
+                                        $room_type = 'Unknown';
+                                        if (isset($test_result['response_data']['availability_data'][0]['Room Type'])) {
+                                            $room_type = $test_result['response_data']['availability_data'][0]['Room Type'];
+                                        }
+                                        echo esc_html($room_type);
+                                        ?>
+                                    </div>
+                                    
+                                    <div>
+                                        <strong>Total Provisional:</strong> <?php echo $provisional_bookings; ?><br>
+                                        <strong>Total Confirmed:</strong> <?php echo $confirmed_bookings; ?><br>
+                                        <strong>Coverage Period:</strong> 
+                                        <?php 
+                                        $date_range = 'N/A';
+                                        if (isset($test_result['response_data']['availability_data'])) {
+                                            $dates = array();
+                                            foreach ($test_result['response_data']['availability_data'] as $room_data) {
+                                                foreach ($room_data as $key => $data) {
+                                                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $key)) {
+                                                        $dates[] = $key;
+                                                    }
+                                                }
+                                            }
+                                            if (!empty($dates)) {
+                                                sort($dates);
+                                                $date_range = reset($dates) . ' to ' . end($dates);
+                                            }
+                                        }
+                                        echo $date_range;
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Detailed Date Breakdown -->
+                            <?php if (isset($test_result['response_data']['availability_data']) && !empty($test_result['response_data']['availability_data'])): ?>
+                                <div style="margin: 15px 0;">
+                                    <h4>📅 Detailed Date Breakdown</h4>
+                                    
+                                    <?php foreach ($test_result['response_data']['availability_data'] as $room_index => $room_data): ?>
+                                        <?php if (isset($room_data['Room Type'])): ?>
+                                            <h5 style="margin: 10px 0 5px 0; color: #495057;">
+                                                🏨 <?php echo esc_html($room_data['Room Type']); ?>
+                                            </h5>
+                                        <?php endif; ?>
+                                        
+                                        <div style="background: #fff; border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0;">
+                                            <table style="width: 100%; border-collapse: collapse;">
+                                                <thead style="background: #f8f9fa;">
+                                                    <tr>
+                                                        <th style="padding: 10px; border-bottom: 1px solid #dee2e6; text-align: left;">Date</th>
+                                                        <th style="padding: 10px; border-bottom: 1px solid #dee2e6; text-align: center;">Status</th>
+                                                        <th style="padding: 10px; border-bottom: 1px solid #dee2e6; text-align: center;">Availability</th>
+                                                        <th style="padding: 10px; border-bottom: 1px solid #dee2e6; text-align: center;">Provisional</th>
+                                                        <th style="padding: 10px; border-bottom: 1px solid #dee2e6; text-align: center;">Confirmed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php 
+                                                    $date_entries = array();
+                                                    foreach ($room_data as $key => $data) {
+                                                        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $key) && is_array($data)) {
+                                                            $date_entries[$key] = $data;
+                                                        }
+                                                    }
+                                                    ksort($date_entries); // Sort dates chronologically
+                                                    
+                                                    foreach ($date_entries as $date => $data): 
+                                                        $availability = isset($data['availability']) ? (int)$data['availability'] : 'N/A';
+                                                        $provisional = isset($data['Prov']) ? (int)$data['Prov'] : 0;
+                                                        $confirmed = isset($data['Conf']) ? (int)$data['Conf'] : 0;
+                                                        
+                                                        $status_color = '';
+                                                        $status_text = '';
+                                                        $status_icon = '';
+                                                        
+                                                        if ($availability === 0) {
+                                                            $status_color = '#dc3545';
+                                                            $status_text = 'BLOCKED';
+                                                            $status_icon = '🔴';
+                                                        } elseif ($availability === 1) {
+                                                            $status_color = '#28a745';
+                                                            $status_text = 'AVAILABLE';
+                                                            $status_icon = '🟢';
+                                                        } else {
+                                                            $status_color = '#6c757d';
+                                                            $status_text = 'UNKNOWN';
+                                                            $status_icon = '⚫';
+                                                        }
+                                                        
+                                                        $formatted_date = date('D, M j, Y', strtotime($date));
+                                                    ?>
+                                                        <tr style="border-bottom: 1px solid #f1f1f1;">
+                                                            <td style="padding: 8px 10px; font-family: monospace;">
+                                                                <strong><?php echo $date; ?></strong><br>
+                                                                <small style="color: #6c757d;"><?php echo $formatted_date; ?></small>
+                                                            </td>
+                                                            <td style="padding: 8px 10px; text-align: center;">
+                                                                <span style="color: <?php echo $status_color; ?>; font-weight: bold;">
+                                                                    <?php echo $status_icon; ?> <?php echo $status_text; ?>
+                                                                </span>
+                                                            </td>
+                                                            <td style="padding: 8px 10px; text-align: center; font-family: monospace;">
+                                                                <span style="background: <?php echo $availability === 0 ? '#fff5f5' : '#f0fff4'; ?>; 
+                                                                           border: 1px solid <?php echo $availability === 0 ? '#fed7d7' : '#c6f6d5'; ?>; 
+                                                                           border-radius: 3px; padding: 2px 6px;">
+                                                                    <?php echo $availability; ?>
+                                                                </span>
+                                                            </td>
+                                                            <td style="padding: 8px 10px; text-align: center; font-family: monospace;">
+                                                                <?php if ($provisional > 0): ?>
+                                                                    <span style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 3px; padding: 2px 6px;">
+                                                                        <?php echo $provisional; ?>
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span style="color: #6c757d;">0</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td style="padding: 8px 10px; text-align: center; font-family: monospace;">
+                                                                <?php if ($confirmed > 0): ?>
+                                                                    <span style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 3px; padding: 2px 6px;">
+                                                                        <?php echo $confirmed; ?>
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span style="color: #6c757d;">0</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <!-- Raw API Response (Collapsible) -->
+                            <div style="margin: 15px 0;">
+                                <h4>🔍 Raw API Response</h4>
+                                <details style="margin: 10px 0;">
+                                    <summary style="cursor: pointer; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
+                                        Click to view raw API response data
+                                    </summary>
+                                    <div style="background: #f1f1f1; padding: 15px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 4px 4px; max-height: 400px; overflow-y: auto;">
+                                        <pre style="margin: 0; white-space: pre-wrap; font-size: 12px;"><?php echo esc_html(print_r($test_result['response_data'], true)); ?></pre>
+                                    </div>
+                                </details>
                             </div>
                         <?php endif; ?>
-                        
-                        <ul style="margin-top: 10px;">
-                            <li>Response Time: <?php echo $test_result['response_time_ms']; ?>ms</li>
-                            <li>Data Received: <?php echo $test_result['data_received'] ? 'Yes' : 'No'; ?></li>
-                            <li>Valid Availability Data: <?php echo $test_result['has_availability_data'] ? 'Yes' : 'No'; ?></li>
-                            <li>Tested at: <?php echo $test_result['timestamp']; ?></li>
-                        </ul>
                         
                         <?php if (isset($test_result['error_message'])): ?>
                             <p><strong>Error:</strong> <?php echo esc_html($test_result['error_message']); ?></p>
@@ -1009,6 +1369,247 @@ define('WP_DEBUG_LOG', true);</code></pre>
     }
     
     /**
+     * API Testing page - Test blocked date ranges and availability responses
+     */
+    public function api_testing_page() {
+        // Handle blocked dates test
+        $test_result = null;
+        $blocked_dates_set = false;
+        
+        if (isset($_POST['test_blocked_dates']) && wp_verify_nonce($_POST['blocked_test_nonce'], 'leobo_blocked_test')) {
+            $start_date = sanitize_text_field($_POST['blocked_start_date']);
+            $end_date = sanitize_text_field($_POST['blocked_end_date']);
+            
+            if (!empty($start_date) && !empty($end_date)) {
+                // Create test API response with blocked dates
+                $test_result = $this->simulate_api_blocked_dates($start_date, $end_date);
+                $blocked_dates_set = true;
+            }
+        }
+        
+        if (isset($_POST['clear_test_data']) && wp_verify_nonce($_POST['clear_test_nonce'], 'leobo_clear_test')) {
+            // Clear any test data
+            $deleted = delete_transient('leobo_test_blocked_dates');
+            $blocked_dates_set = false;
+            
+            // Log the clear action for debugging
+            error_log('Clear test data button clicked. Transient deleted: ' . ($deleted ? 'Yes' : 'No'));
+            
+            // Force a page redirect to ensure fresh state
+            wp_redirect(add_query_arg('test_cleared', '1', wp_get_referer()));
+            exit;
+        }
+        
+        ?>
+        <div class="wrap">
+            <h1>API Testing & Blocked Dates</h1>
+            
+            <!-- API Response Structure Info -->
+            <div class="card" style="max-width: none; margin-bottom: 20px;">
+                <h2>API Response Structure</h2>
+                <p>The Pan Hospitality API returns availability data in the following format:</p>
+                <div style="background: #f1f1f1; padding: 15px; border-radius: 4px; margin: 10px 0;">
+                    <pre style="margin: 0; font-size: 12px;">Array
+(
+    [availability_data] => Array
+        (
+            [0] => Array
+                (
+                    [Room Type] => LPRO - THE OBSERVATORY - OBSERVATORY
+                    [2025-08-17] => Array
+                        (
+                            [availability] => 0  // 0 = Not Available, 1 = Available
+                            [Prov] => 1          // Provisional bookings
+                            [Conf] => 0          // Confirmed bookings
+                        )
+                    [2025-08-18] => Array
+                        (
+                            [availability] => 0
+                            [Prov] => 1
+                            [Conf] => 0
+                        )
+                    // ... more dates
+                )
+        )
+)</pre>
+                </div>
+                <p><strong>Key:</strong></p>
+                <ul>
+                    <li><code>availability: 0</code> = Date is blocked/unavailable</li>
+                    <li><code>availability: 1</code> = Date is available for booking</li>
+                    <li><code>Prov</code> = Number of provisional bookings</li>
+                    <li><code>Conf</code> = Number of confirmed bookings</li>
+                </ul>
+            </div>
+            
+            <!-- Blocked Dates Testing -->
+            <div class="card" style="max-width: none; margin-bottom: 20px;">
+                <h2>Test Blocked Date Ranges</h2>
+                <p>Use this section to simulate API responses with blocked dates for testing the booking form's behavior.</p>
+                
+                <form method="post" style="margin-bottom: 20px;">
+                    <?php wp_nonce_field('leobo_blocked_test', 'blocked_test_nonce'); ?>
+                    <?php wp_nonce_field('leobo_clear_test', 'clear_test_nonce'); ?>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Start Date</th>
+                            <td>
+                                <input type="date" name="blocked_start_date" value="<?php echo date('Y-m-d'); ?>" required />
+                                <p class="description">Start date for the blocked range</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">End Date</th>
+                            <td>
+                                <input type="date" name="blocked_end_date" value="<?php echo date('Y-m-d', strtotime('+7 days')); ?>" required />
+                                <p class="description">End date for the blocked range</p>
+                            </td>
+                        </tr>
+                    </table>
+                    <p>
+                        <input type="submit" name="test_blocked_dates" class="button button-primary" value="Simulate Blocked Dates" />
+                        <input type="submit" name="clear_test_data" class="button button-secondary" value="Clear Test Data" />
+                    </p>
+                </form>
+                
+                <?php if ($test_result): ?>
+                    <div class="notice notice-success inline">
+                        <h4>Test API Response Generated</h4>
+                        <p><strong>Blocked Date Range:</strong> <?php echo $test_result['blocked_range']; ?></p>
+                        <p><strong>Total Blocked Dates:</strong> <?php echo $test_result['blocked_count']; ?></p>
+                        
+                        <h4>Simulated API Response:</h4>
+                        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; max-height: 400px; overflow-y: auto;">
+                            <pre style="margin: 0; font-size: 11px; white-space: pre-wrap;"><?php echo esc_html(print_r($test_result['api_response'], true)); ?></pre>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px;">
+                            <strong>Testing Instructions:</strong>
+                            <ol style="margin: 5px 0;">
+                                <li>This simulated data has been stored temporarily</li>
+                                <li>Visit your booking form to test how it handles these blocked dates</li>
+                                <li>Try selecting dates within the blocked range - they should be unavailable</li>
+                                <li>Check that the calendar properly highlights blocked dates</li>
+                                <li>Use "Clear Test Data" to remove the simulation</li>
+                            </ol>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($_GET['test_cleared'])): ?>
+                    <div class="notice notice-success inline">
+                        <p>✅ Test data has been cleared successfully. The booking form will now use live API data.</p>
+                    </div>
+                <?php elseif (isset($_POST['clear_test_data'])): ?>
+                    <div class="notice notice-info inline">
+                        <p>Test data has been cleared. The booking form will now use live API data.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+            
+            <!-- Current Test Status -->
+            <div class="card" style="max-width: none; margin-bottom: 20px;">
+                <h2>Current Test Status</h2>
+                <?php
+                $current_test_data = get_transient('leobo_test_blocked_dates');
+                if ($current_test_data): ?>
+                    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px;">
+                        <h4 style="margin-top: 0; color: #856404;">⚠️ Test Mode Active</h4>
+                        <p style="margin-bottom: 5px; color: #856404;"><strong>Blocked Range:</strong> <?php echo $current_test_data['blocked_range']; ?></p>
+                        <p style="margin-bottom: 5px; color: #856404;"><strong>Blocked Dates Count:</strong> <?php echo $current_test_data['blocked_count']; ?></p>
+                        <p style="margin-bottom: 0; color: #856404;"><strong>Created:</strong> <?php echo $current_test_data['created']; ?></p>
+                    </div>
+                <?php else: ?>
+                    <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 15px;">
+                        <h4 style="margin-top: 0; color: #155724;">✅ Live Mode</h4>
+                        <p style="margin-bottom: 0; color: #155724;">No test data active. The booking form is using live API data.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+            
+            <!-- API Integration Testing -->
+            <div class="card" style="max-width: none;">
+                <h2>API Integration Testing</h2>
+                <p>Use these tools to test different aspects of the API integration:</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                    
+                    <!-- Test Scenario 1 -->
+                    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin-top: 0;">Fully Booked Period</h4>
+                        <p>Test a period where all dates are unavailable (availability: 0)</p>
+                        <button type="button" class="button button-secondary" onclick="testScenario('fully_booked')">Test Scenario</button>
+                    </div>
+                    
+                    <!-- Test Scenario 2 -->
+                    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin-top: 0;">Partially Available</h4>
+                        <p>Test mixed availability with some dates blocked and some available</p>
+                        <button type="button" class="button button-secondary" onclick="testScenario('partial')">Test Scenario</button>
+                    </div>
+                    
+                    <!-- Test Scenario 3 -->
+                    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin-top: 0;">High Demand Dates</h4>
+                        <p>Test dates with provisional bookings (Prov > 0)</p>
+                        <button type="button" class="button button-secondary" onclick="testScenario('high_demand')">Test Scenario</button>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        function testScenario(scenario) {
+            // This could be expanded to create different test scenarios
+            alert('Test scenario "' + scenario + '" would be implemented here.\n\nThis would create specific API response patterns for testing different booking situations.');
+        }
+        </script>
+        <?php
+    }
+    
+    /**
+     * Simulate API response with blocked dates
+     */
+    private function simulate_api_blocked_dates($start_date, $end_date) {
+        $start = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        $interval = new DateInterval('P1D');
+        $period = new DatePeriod($start, $interval, $end->add($interval));
+        
+        $api_response = array(
+            'availability_data' => array(
+                array(
+                    'Room Type' => 'LPRO - THE OBSERVATORY - OBSERVATORY'
+                )
+            )
+        );
+        
+        $blocked_count = 0;
+        foreach ($period as $date) {
+            $date_string = $date->format('Y-m-d');
+            $api_response['availability_data'][0][$date_string] = array(
+                'availability' => 0, // Blocked
+                'Prov' => 1,
+                'Conf' => 0
+            );
+            $blocked_count++;
+        }
+        
+        // Store test data temporarily
+        $test_data = array(
+            'api_response' => $api_response,
+            'blocked_range' => $start_date . ' to ' . $end_date,
+            'blocked_count' => $blocked_count,
+            'created' => current_time('Y-m-d H:i:s')
+        );
+        
+        set_transient('leobo_test_blocked_dates', $test_data, HOUR_IN_SECONDS * 2); // Store for 2 hours
+        
+        return $test_data;
+    }
+    
+    /**
      * Debug page - Shows all ACF configuration data
      */
     public function debug_page() {
@@ -1018,6 +1619,7 @@ define('WP_DEBUG_LOG', true);</code></pre>
             
             <div class="nav-tab-wrapper">
                 <a href="#acf-data" class="nav-tab nav-tab-active" onclick="showDebugTab('acf-data')">ACF Configuration</a>
+                <a href="#acf-export" class="nav-tab" onclick="showDebugTab('acf-export')">ACF Export</a>
                 <a href="#pricing-test" class="nav-tab" onclick="showDebugTab('pricing-test')">Pricing Test</a>
                 <a href="#season-check" class="nav-tab" onclick="showDebugTab('season-check')">Season Detection</a>
                 <a href="#min-nights" class="nav-tab" onclick="showDebugTab('min-nights')">Minimum Nights</a>
@@ -1028,7 +1630,46 @@ define('WP_DEBUG_LOG', true);</code></pre>
                 <div class="card">
                     <h2>🔧 ACF Configuration Data</h2>
                     
+                    <?php 
+                    // Check if main pricing fields are configured
+                    $standard_configured = !empty(get_field('standard_base_rate', 'option')) && !empty(get_field('standard_season_dates', 'option'));
+                    $peak_configured = !empty(get_field('peak_base_rate', 'option')) && !empty(get_field('peak_season_dates', 'option'));
+                    $christmas_configured = !empty(get_field('christmas_base_rate', 'option')) && !empty(get_field('christmas_dates', 'option'));
+                    
+                    $all_configured = $standard_configured && $peak_configured && $christmas_configured;
+                    ?>
+                    
+                    <div style="padding: 15px; background: <?php echo $all_configured ? '#d4edda' : '#f8d7da'; ?>; border: 2px solid <?php echo $all_configured ? '#c3e6cb' : '#f1b0b7'; ?>; border-radius: 8px; margin-bottom: 20px;">
+                        <?php if ($all_configured): ?>
+                            <h3 style="color: #155724; margin: 0 0 10px 0;">✅ System Fully Configured</h3>
+                            <p style="margin: 0; color: #155724;">All rate data is being read from ACF fields in Booking Config.</p>
+                        <?php else: ?>
+                            <h3 style="color: #721c24; margin: 0 0 10px 0;">⚠️ Configuration Required</h3>
+                            <p style="margin: 0 0 10px 0; color: #721c24;"><strong>The system is currently using fallback values.</strong> Please configure the missing ACF fields:</p>
+                            <ul style="margin: 0; color: #721c24;">
+                                <?php if (!$standard_configured): ?>
+                                    <li>Standard Season: rates and/or dates not configured</li>
+                                <?php endif; ?>
+                                <?php if (!$peak_configured): ?>
+                                    <li>Peak Season: rates and/or dates not configured</li>
+                                <?php endif; ?>
+                                <?php if (!$christmas_configured): ?>
+                                    <li>Christmas Season: rates and/or dates not configured</li>
+                                <?php endif; ?>
+                            </ul>
+                            <p style="margin: 10px 0 0 0; color: #721c24;"><strong>→ Go to <a href="<?php echo admin_url('admin.php?page=booking-config'); ?>">Booking Config</a> to set up proper rates.</strong></p>
+                        <?php endif; ?>
+                    </div>
+                    
                     <h3>Standard Season</h3>
+                    <?php 
+                    $standard_base = get_field('standard_base_rate', 'option');
+                    $standard_dates = get_field('standard_season_dates', 'option');
+                    $is_configured = !empty($standard_base) && !empty($standard_dates);
+                    ?>
+                    <div style="padding: 10px; background: <?php echo $is_configured ? '#d4edda' : '#f8d7da'; ?>; border: 1px solid <?php echo $is_configured ? '#c3e6cb' : '#f1b0b7'; ?>; border-radius: 4px; margin-bottom: 10px;">
+                        <strong>Configuration Status:</strong> <?php echo $is_configured ? '✅ CONFIGURED (using ACF values)' : '⚠️ NOT CONFIGURED (using fallback values)'; ?>
+                    </div>
                     <pre><?php echo esc_html(print_r(array(
                         'dates' => get_field('standard_season_dates', 'option'),
                         'base_rate' => get_field('standard_base_rate', 'option'),
@@ -1037,6 +1678,14 @@ define('WP_DEBUG_LOG', true);</code></pre>
                     ), true)); ?></pre>
                     
                     <h3>Peak Season</h3>
+                    <?php 
+                    $peak_base = get_field('peak_base_rate', 'option');
+                    $peak_dates = get_field('peak_season_dates', 'option');
+                    $is_peak_configured = !empty($peak_base) && !empty($peak_dates);
+                    ?>
+                    <div style="padding: 10px; background: <?php echo $is_peak_configured ? '#d4edda' : '#f8d7da'; ?>; border: 1px solid <?php echo $is_peak_configured ? '#c3e6cb' : '#f1b0b7'; ?>; border-radius: 4px; margin-bottom: 10px;">
+                        <strong>Configuration Status:</strong> <?php echo $is_peak_configured ? '✅ CONFIGURED (using ACF values)' : '⚠️ NOT CONFIGURED (using fallback values)'; ?>
+                    </div>
                     <pre><?php echo esc_html(print_r(array(
                         'dates' => get_field('peak_season_dates', 'option'),
                         'base_rate' => get_field('peak_base_rate', 'option'),
@@ -1045,6 +1694,14 @@ define('WP_DEBUG_LOG', true);</code></pre>
                     ), true)); ?></pre>
                     
                     <h3>Christmas Season</h3>
+                    <?php 
+                    $christmas_base = get_field('christmas_base_rate', 'option');
+                    $christmas_dates = get_field('christmas_dates', 'option');
+                    $is_christmas_configured = !empty($christmas_base) && !empty($christmas_dates);
+                    ?>
+                    <div style="padding: 10px; background: <?php echo $is_christmas_configured ? '#d4edda' : '#f8d7da'; ?>; border: 1px solid <?php echo $is_christmas_configured ? '#c3e6cb' : '#f1b0b7'; ?>; border-radius: 4px; margin-bottom: 10px;">
+                        <strong>Configuration Status:</strong> <?php echo $is_christmas_configured ? '✅ CONFIGURED (using ACF values)' : '⚠️ NOT CONFIGURED (using fallback values)'; ?>
+                    </div>
                     <pre><?php echo esc_html(print_r(array(
                         'dates' => get_field('christmas_dates', 'option'),
                         'base_rate' => get_field('christmas_base_rate', 'option'),
@@ -1070,6 +1727,106 @@ define('WP_DEBUG_LOG', true);</code></pre>
                         'special_min_nights' => get_field('special_min_nights', 'option'),
                         'half_terms' => get_field('half_terms', 'option')
                     ), true)); ?></pre>
+                </div>
+            </div>
+            
+            <!-- ACF Export Tab -->
+            <div id="acf-export-tab" class="debug-tab-content" style="display: none;">
+                <div class="card">
+                    <h2>📦 Complete ACF Data Export</h2>
+                    <p>This is the complete export of all ACF fields for booking system analysis. Copy this data to share with developers for debugging purposes.</p>
+                    
+                    <div style="margin: 15px 0;">
+                        <button type="button" onclick="copyACFExport()" class="button button-primary">📋 Copy to Clipboard</button>
+                        <span id="copy-feedback" style="margin-left: 10px; color: green; display: none;">✅ Copied!</span>
+                    </div>
+                    
+                    <textarea id="acf-export-data" readonly style="width: 100%; height: 500px; font-family: 'Courier New', monospace; font-size: 12px; background: #f8f9fa; border: 1px solid #ddd; padding: 15px;">
+<?php
+// Export all ACF booking configuration data
+$acf_export = array(
+    'export_timestamp' => current_time('Y-m-d H:i:s'),
+    'wordpress_version' => get_bloginfo('version'),
+    'acf_version' => defined('ACF_VERSION') ? ACF_VERSION : 'Not Available',
+    'booking_system_version' => '3.9.0',
+    
+    // Season Configuration
+    'seasons' => array(
+        'standard' => array(
+            'dates' => get_field('standard_season_dates', 'option'),
+            'base_rate' => get_field('standard_base_rate', 'option'),
+            'extra_adult' => get_field('standard_extra_adult', 'option'),
+            'extra_child' => get_field('standard_extra_child', 'option')
+        ),
+        'peak' => array(
+            'dates' => get_field('peak_season_dates', 'option'),
+            'base_rate' => get_field('peak_base_rate', 'option'),
+            'extra_adult' => get_field('peak_extra_adult', 'option'),
+            'extra_child' => get_field('peak_extra_child', 'option')
+        ),
+        'christmas' => array(
+            'dates' => get_field('christmas_dates', 'option'),
+            'base_rate' => get_field('christmas_base_rate', 'option'),
+            'extra_adult' => get_field('christmas_extra_adult', 'option'),
+            'extra_child' => get_field('christmas_extra_child', 'option'),
+            'surcharge' => get_field('christmas_surcharge', 'option')
+        )
+    ),
+    
+    // Guest Rules
+    'guest_rules' => array(
+        'max_adults' => get_field('max_adults', 'option'),
+        'max_children' => get_field('max_children', 'option'),
+        'max_babies' => get_field('max_babies', 'option'),
+        'children_free_age' => get_field('children_free_age', 'option')
+    ),
+    
+    // Minimum Nights Configuration
+    'minimum_nights' => array(
+        'default_min_nights' => get_field('default_min_nights', 'option'),
+        'special_min_nights' => get_field('special_min_nights', 'option'),
+        'half_terms' => get_field('half_terms', 'option')
+    ),
+    
+    // Helicopter Packages
+    'helicopter_packages' => get_field('helicopter_packages', 'option'),
+    'heli_additional_hour' => get_field('heli_additional_hour', 'option'),
+    
+    // Blocked Dates
+    'blocked_dates' => get_field('blocked_dates', 'option'),
+    
+    // Other Settings
+    'other_settings' => array(
+        'currency_symbol' => get_field('currency_symbol', 'option'),
+        'booking_form_title' => get_field('booking_form_title', 'option'),
+        'booking_form_subtitle' => get_field('booking_form_subtitle', 'option'),
+        'terms_and_conditions' => get_field('terms_and_conditions', 'option')
+    ),
+    
+    // System Status
+    'system_status' => array(
+        'acf_fields_configured' => array(
+            'standard_season' => !empty(get_field('standard_base_rate', 'option')) && !empty(get_field('standard_season_dates', 'option')),
+            'peak_season' => !empty(get_field('peak_base_rate', 'option')) && !empty(get_field('peak_season_dates', 'option')),
+            'christmas_season' => !empty(get_field('christmas_base_rate', 'option')) && !empty(get_field('christmas_dates', 'option')),
+        ),
+        'using_fallback_rates' => empty(get_field('standard_base_rate', 'option')) || empty(get_field('peak_base_rate', 'option'))
+    )
+);
+
+echo json_encode($acf_export, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+?>
+                    </textarea>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-left: 4px solid #2196f3;">
+                        <strong>Usage Instructions:</strong>
+                        <ul style="margin: 5px 0;">
+                            <li>Use "Copy to Clipboard" button to copy all data</li>
+                            <li>Paste into development tools or share with developers</li>
+                            <li>Shows current configuration status and which fields need setup</li>
+                            <li>Includes system version information for compatibility checks</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
             
@@ -1268,6 +2025,37 @@ define('WP_DEBUG_LOG', true);</code></pre>
                 .catch(error => {
                     document.getElementById('min-nights-results').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
                 });
+            }
+            
+            function copyACFExport() {
+                var exportData = document.getElementById('acf-export-data');
+                var feedback = document.getElementById('copy-feedback');
+                
+                // Select and copy the text
+                exportData.select();
+                exportData.setSelectionRange(0, 99999); // For mobile devices
+                
+                try {
+                    document.execCommand('copy');
+                    
+                    // Show feedback
+                    feedback.style.display = 'inline';
+                    setTimeout(function() {
+                        feedback.style.display = 'none';
+                    }, 3000);
+                    
+                } catch (err) {
+                    // Fallback for browsers that don't support execCommand
+                    feedback.textContent = '❌ Copy failed - please select and copy manually';
+                    feedback.style.color = 'red';
+                    feedback.style.display = 'inline';
+                    
+                    setTimeout(function() {
+                        feedback.style.display = 'none';
+                        feedback.textContent = '✅ Copied!';
+                        feedback.style.color = 'green';
+                    }, 5000);
+                }
             }
             </script>
         </div>

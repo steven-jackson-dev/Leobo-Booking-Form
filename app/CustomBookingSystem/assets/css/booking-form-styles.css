@@ -135,6 +135,7 @@
     background: var(--background-dark);
     padding: var(--spacing-xl);
     border-left: 1px solid var(--border-color);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
 }
 
 /* ====================
@@ -410,6 +411,33 @@
     background: rgba(108, 117, 125, 0.1);
 }
 
+.calendar-day.blocked {
+    color: #dc3545 !important;
+    background: rgba(220, 53, 69, 0.15) !important;
+    border: 1px solid rgba(220, 53, 69, 0.4) !important;
+    cursor: not-allowed;
+    position: relative;
+}
+
+.calendar-day.blocked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 20px;
+    background: #dc3545;
+    transform: translate(-50%, -50%) rotate(45deg);
+    pointer-events: none;
+}
+
+.calendar-day.blocked:hover {
+    background: rgba(220, 53, 69, 0.25) !important;
+    border-color: rgba(220, 53, 69, 0.6) !important;
+    transform: none;
+}
+
 .calendar-day.available {
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.05);
@@ -532,6 +560,7 @@
     height: 12px;
     border-radius: 3px;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-right: 5px;
 }
 
 .legend-color.season-standard {
@@ -547,6 +576,23 @@
 .legend-color.season-christmas {
     background: rgba(220, 38, 127, 0.6);
     border-color: #dc267f;
+}
+
+.legend-color.blocked {
+    background: rgba(220, 53, 69, 0.6);
+    border: 1px solid #dc3545;
+    position: relative;
+}
+
+.legend-color.blocked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 1px;
+    height: 12px;
+    background: #dc3545;
 }
 
 /* Mobile adjustments for legend */
@@ -589,11 +635,6 @@
     padding: var(--spacing-sm);
     text-align: center;
     margin-bottom: var(--spacing-md);
-}
-
-.date-availability-notice small {
-    display: block;
-    line-height: 1.4;
 }
 
 .temp-availability-info {
@@ -914,6 +955,16 @@
     display: none !important;
 }
 
+/* Hide all span.checkmark elements as requested */
+span.checkmark {
+    display: none !important;
+}
+
+/* Hide all radio-mark elements as requested */
+.radio-mark {
+    display: none !important;
+}
+
 /* Hide any floating checkmarks that might appear due to CSS issues */
 span.checkmark:not([class*="label"] span.checkmark):not([class*="option"] span.checkmark) {
     visibility: hidden !important;
@@ -998,13 +1049,14 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .btn-primary {
-    background: var(--button-primary);
-    color: var(--background-dark);
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
 }
 
 .btn-primary:hover {
-    background: var(--button-primary-hover);
-    transform: translateY(-2px);
+    border-color: var(--leobo-gold);
+    color: var(--leobo-gold);
 }
 
 .btn-secondary {
@@ -1029,21 +1081,31 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .summary-section {
     margin-bottom: var(--spacing-xl);
-    padding-bottom: var(--spacing-lg);
-    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+}
+
+.summary-section:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(212, 184, 150, 0.3);
 }
 
 .summary-section:last-child {
-    border-bottom: none;
+    margin-bottom: 0;
 }
 
 .summary-title {
     font-size: var(--font-size-sm);
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--leobo-gold);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     margin: 0 0 var(--spacing-md) 0;
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid rgba(212, 184, 150, 0.2);
 }
 
 .guest-summary {
@@ -1126,17 +1188,24 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .price-display,
 .total-price-display {
-    text-align: left;
+    text-align: center;
+    padding: var(--spacing-md);
+    background: rgba(212, 184, 150, 0.1);
+    border: 1px solid rgba(212, 184, 150, 0.3);
+    border-radius: var(--border-radius);
+    margin-top: var(--spacing-sm);
 }
 
 .price-amount {
     font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--leobo-gold);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .price-amount.total {
     font-size: var(--font-size-2xl);
+    font-weight: 700;
 }
 
 /* ====================
@@ -1144,19 +1213,23 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
    ==================== */
 
 .cost-breakdown {
-    margin: var(--spacing-lg) 0;
-    padding: var(--spacing-md) 0;
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
+    margin: var(--spacing-lg) 0 0 0;
+    padding: var(--spacing-lg);
+    background: rgba(212, 184, 150, 0.05);
+    border: 1px solid rgba(212, 184, 150, 0.2);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .breakdown-header {
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--leobo-gold);
     margin-bottom: var(--spacing-md);
     text-transform: uppercase;
     font-size: var(--font-size-sm);
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid rgba(212, 184, 150, 0.3);
 }
 
 .breakdown-details {
@@ -1172,8 +1245,16 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-sm) 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     font-size: var(--font-size-sm);
+    transition: all 0.2s ease;
+}
+
+.breakdown-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+    padding-left: var(--spacing-xs);
+    padding-right: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
 }
 
 .breakdown-item:last-child {
@@ -1245,6 +1326,176 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
         margin-left: 0;
         align-self: flex-start;
     }
+}
+
+/* Enhanced Breakdown Sections */
+.breakdown-section {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.breakdown-season-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.season-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--leobo-gold);
+    color: var(--leobo-dark-brown);
+    border-radius: 20px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.season-badge.peak {
+    background: #ff6b35;
+    color: white;
+}
+
+.season-badge.christmas {
+    background: #e91e63;
+    color: white;
+}
+
+.season-dates {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.breakdown-season-details {
+    margin-top: var(--spacing-sm);
+}
+
+.season-rate, .season-nights {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.season-rate {
+    font-weight: 500;
+}
+
+.season-nights {
+    color: var(--text-secondary);
+    opacity: 0.9;
+}
+
+/* Nightly Breakdown Toggle */
+.breakdown-nightly-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.nightly-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.nightly-toggle {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-xs);
+    transition: all 0.2s ease;
+}
+
+.nightly-toggle:hover {
+    border-color: var(--leobo-gold);
+    color: var(--leobo-gold);
+}
+
+.toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.nightly-toggle.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.breakdown-nightly-details {
+    margin-top: var(--spacing-sm);
+}
+
+.nightly-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: var(--font-size-xs);
+}
+
+.nightly-item:last-child {
+    border-bottom: none;
+}
+
+.nightly-date {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.nightly-season {
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin: 0 var(--spacing-xs);
+}
+
+.nightly-season.standard {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+
+.nightly-season.peak {
+    background: rgba(255, 107, 53, 0.2);
+    color: #ff6b35;
+}
+
+.nightly-season.christmas {
+    background: rgba(233, 30, 99, 0.2);
+    color: #e91e63;
+}
+
+.nightly-rate {
+    color: var(--leobo-gold);
+    font-weight: 500;
+}
+
+.christmas-premium-indicator {
+    display: inline-block;
+    margin-left: 4px;
+    color: #e91e63;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* Enhanced breakdown items */
+.breakdown-item.premium-item {
+    background: rgba(233, 30, 99, 0.05);
+    border-left: 3px solid #e91e63;
+    padding-left: var(--spacing-sm);
 }
 
 /* ====================
@@ -1735,5 +1986,119 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     
     .datepicker__month {
         margin-bottom: var(--spacing-md);
+    }
+}
+
+/* ====================
+   HELICOPTER PACKAGE STYLES
+   ==================== */
+
+.helicopter-options {
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.helicopter-options[style*="block"] {
+    opacity: 1;
+}
+
+.helicopter-package-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.helicopter-package-option {
+    display: flex;
+    align-items: flex-start;
+    background: var(--input-bg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.helicopter-package-option:hover {
+    border-color: var(--leobo-gold);
+    background: rgba(212, 184, 150, 0.05);
+}
+
+.helicopter-package-option input[type="radio"] {
+    margin: 0;
+    margin-right: 12px;
+    margin-top: 2px;
+    accent-color: var(--leobo-gold);
+}
+
+.helicopter-package-option input[type="radio"]:checked + .package-details {
+    color: var(--leobo-gold);
+}
+
+.helicopter-package-option:has(input:checked) {
+    border-color: var(--leobo-gold);
+    background: rgba(212, 184, 150, 0.1);
+}
+
+.package-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.package-title {
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.package-hours {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.package-price {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--leobo-gold);
+    margin-top: 4px;
+}
+
+/* Responsive helicopter package */
+@media (min-width: 768px) {
+    .helicopter-package-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .helicopter-package-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 567px) {
+    .helicopter-package-option {
+        padding: 12px;
+    }
+    
+    .package-details {
+        gap: 2px;
+    }
+    
+    .package-title {
+        font-size: var(--font-size-sm);
+    }
+    
+    .package-hours {
+        font-size: var(--font-size-xs);
+    }
+    
+    .package-price {
+        font-size: var(--font-size-base);
     }
 }

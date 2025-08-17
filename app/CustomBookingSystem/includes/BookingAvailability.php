@@ -34,6 +34,12 @@ class LeoboBookingAvailability {
      * Get availability data with enhanced caching and fallback
      */
     public function get_availability($start_date, $end_date, $force_refresh = false) {
+        // Check for test data first
+        $test_data = get_transient('leobo_test_blocked_dates');
+        if ($test_data && isset($test_data['api_response'])) {
+            return $test_data['api_response'];
+        }
+        
         $cache_key = 'leobo_availability_' . md5($start_date . $end_date);
         $fallback_key = 'leobo_availability_fallback_' . md5($start_date . $end_date);
         
@@ -135,10 +141,13 @@ class LeoboBookingAvailability {
     
     /**
      * Get blocked dates in various formats
+     * Note: Last day of consecutive blocked periods is made available for check-in
+     * since guests check in at night and previous guests leave in the morning
      */
     public function get_blocked_dates($months_ahead = 12, $format = 'Y-m-d') {
+        // API returns all blocked dates in one call, no need for date range
         $start_date = date('Y/m/d');
-        $end_date = date('Y/m/d', strtotime("+{$months_ahead} months"));
+        $end_date = date('Y/m/d', strtotime('+7 days')); // Just use a short range as API returns everything
         
         $availability_data = $this->get_availability($start_date, $end_date);
         
@@ -146,7 +155,7 @@ class LeoboBookingAvailability {
             return array();
         }
         
-        $blocked_dates = array();
+        $raw_blocked_dates = array();
         
         foreach ($availability_data['availability_data'] as $room_data) {
             foreach ($room_data as $date => $availability) {
@@ -155,15 +164,87 @@ class LeoboBookingAvailability {
                     continue;
                 }
                 
-                // Block dates where availability is 0
+                // Collect dates where availability is 0
                 if (isset($availability['availability']) && $availability['availability'] == 0) {
-                    $formatted_date = date($format, strtotime($date));
-                    $blocked_dates[] = $formatted_date;
+                    $raw_blocked_dates[] = $date;
                 }
             }
         }
         
-        return array_unique($blocked_dates);
+        // Sort the dates and remove duplicates
+        $raw_blocked_dates = array_unique($raw_blocked_dates);
+        sort($raw_blocked_dates);
+        
+        // Process to allow check-in on last day of consecutive blocked periods
+        $final_blocked_dates = $this->process_blocked_periods($raw_blocked_dates, $format);
+        
+        return $final_blocked_dates;
+    }
+    
+    /**
+     * Process blocked dates to allow check-in on the last day of consecutive periods
+     */
+    private function process_blocked_periods($blocked_dates, $format = 'Y-m-d') {
+        if (empty($blocked_dates)) {
+            return array();
+        }
+        
+        $final_blocked = array();
+        $consecutive_periods = $this->group_consecutive_dates($blocked_dates);
+        
+        foreach ($consecutive_periods as $period) {
+            // For each consecutive period, block all dates except the last one
+            // The last day becomes available for new check-ins (guests check out in morning)
+            if (count($period) > 1) {
+                // Remove the last date from blocking (allow check-in on checkout day)
+                $period_to_block = array_slice($period, 0, -1);
+                foreach ($period_to_block as $date) {
+                    $final_blocked[] = date($format, strtotime($date));
+                }
+            }
+            // If it's a single day block, we still block it completely
+            // (no one can check in or out on the same day)
+            else {
+                foreach ($period as $date) {
+                    $final_blocked[] = date($format, strtotime($date));
+                }
+            }
+        }
+        
+        return array_unique($final_blocked);
+    }
+    
+    /**
+     * Group consecutive dates into periods
+     */
+    private function group_consecutive_dates($dates) {
+        if (empty($dates)) {
+            return array();
+        }
+        
+        sort($dates);
+        $periods = array();
+        $current_period = array($dates[0]);
+        
+        for ($i = 1; $i < count($dates); $i++) {
+            $prev_date = new DateTime($dates[$i - 1]);
+            $curr_date = new DateTime($dates[$i]);
+            $diff = $prev_date->diff($curr_date)->days;
+            
+            if ($diff === 1) {
+                // Consecutive date, add to current period
+                $current_period[] = $dates[$i];
+            } else {
+                // Gap found, start new period
+                $periods[] = $current_period;
+                $current_period = array($dates[$i]);
+            }
+        }
+        
+        // Add the last period
+        $periods[] = $current_period;
+        
+        return $periods;
     }
     
     /**
@@ -226,16 +307,16 @@ class LeoboBookingAvailability {
     public function refresh_availability_cache() {
         check_ajax_referer('leobo_booking_nonce', 'nonce');
         
-        $months_ahead = isset($_POST['months_ahead']) ? intval($_POST['months_ahead']) : 12;
+        // API returns all blocked dates in one call, no need for month calculation
         $start_date = date('Y/m/d');
-        $end_date = date('Y/m/d', strtotime("+{$months_ahead} months"));
+        $end_date = date('Y/m/d', strtotime('+7 days')); // Short range as API returns everything
         
         $data = $this->get_availability($start_date, $end_date, true); // Force refresh
         
         if ($data) {
             wp_send_json_success(array(
                 'message' => 'Availability cache refreshed successfully',
-                'blocked_dates' => $this->get_blocked_dates($months_ahead)
+                'blocked_dates' => $this->get_blocked_dates(1) // API returns all dates regardless of range
             ));
         } else {
             wp_send_json_error('Failed to refresh availability cache');
@@ -246,8 +327,9 @@ class LeoboBookingAvailability {
      * Scheduled cache refresh
      */
     public function scheduled_cache_refresh() {
+        // API returns all blocked dates in one call, no need for 12-month range
         $start_date = date('Y/m/d');
-        $end_date = date('Y/m/d', strtotime('+12 months'));
+        $end_date = date('Y/m/d', strtotime('+7 days'));
         
         $this->get_availability($start_date, $end_date, true);
         

@@ -106,7 +106,7 @@ $atts = $args['attributes'] ?? array();
                                 </div>
                                 
                                 <div class="date-availability-notice">
-                                    <small>📅 Different colors indicate seasonal pricing: <span style="color: #4caf50;">Green (Standard)</span>, <span style="color: #ff8f00;">Orange (Peak)</span>, <span style="color: #dc267f;">Pink (Christmas)</span>. Legend shows below calendar.</small>
+                                    📅 Different colors indicate seasonal pricing: <span style="color: #4caf50;">Green (Standard)</span>, <span style="color: #ff8f00;">Orange (Peak)</span>, <span style="color: #dc267f;">Pink (Christmas)</span>. Legend shows below calendar.
                                 </div>
                                 
                                 <div class="date-flexible-option">
@@ -168,13 +168,18 @@ $atts = $args['attributes'] ?? array();
                             <div class="form-section included-section">
                                 <h3 class="section-title">What's included in the price?</h3>
                                 <ul class="included-list">
-                                    <li>Unlimited quad bikes, buggies, and game vehicles</li>
-                                    <li>Stargazing with a research-grade telescope</li>
-                                    <li>River kayaking + natural freshwater swimming</li>
-                                    <li>Private chef + all meals</li>
-                                    <li>Housekeeping + full staff</li>
-                                    <li>Full access to the 20,000-acre reserve</li>
-                                    <li>Exclusive use of The Observatory Villa</li>
+                                    <li>Exclusive use of entire 8000 hectare (20,000 acre) private reserve</li>
+                                    <li>Full use of Observatory Villa with all facilities</li>
+                                    <li>All meals, house drinks, wines and spirits included</li>
+                                    <li>Chef, Butler, Game Ranger, and full staff</li>
+                                    <li>Game Drives, Quad Bike Safari, Dirt Bike Safari, GS Moon Off-road Buggy</li>
+                                    <li>Fishing, Day at Beach Camp, Afternoons at Mountain Lookout</li>
+                                    <li>Rock Art Viewing, Clifftop Mountain Walks, Cave Walks</li>
+                                    <li>Paint Balling, Clay Pigeon Shooting, Clifftop Camping, Hippo Camping</li>
+                                    <li>Wood-fire Pizzas at Hippo Deck, Dinner at Romance Bush Deck</li>
+                                    <li>Drinks at Bone Bar, Sunrise at River Lookout, Boma Dinners</li>
+                                    <li>Research Grade Observatory with automated 20-inch telescope</li>
+                                    <li>Heated Infinity Pool, Jacuzzi, 3D TV, Wi-Fi, Multi-room music system</li>
                                 </ul>
                             </div>
                         </div>
@@ -217,19 +222,81 @@ $atts = $args['attributes'] ?? array();
                         <!-- Helicopter Package Section -->
                         <div class="form-section">
                             <h3 class="section-title">HELICOPTER PACKAGE</h3>
-                            <p class="section-subtitle">Includes pickup and unlimited use?</p>
+                            <p class="section-subtitle">Would you like to add a helicopter adventure package?</p>
                             
                             <div class="radio-group">
                                 <label class="radio-option">
-                                    <input type="radio" name="helicopter_package" value="yes" />
+                                    <input type="radio" name="helicopter_interested" value="yes" id="helicopter-yes" />
                                     <span class="radio-mark"></span>
-                                    Yes
+                                    Yes, I'm interested
                                 </label>
                                 <label class="radio-option">
-                                    <input type="radio" name="helicopter_package" value="no" />
+                                    <input type="radio" name="helicopter_interested" value="no" id="helicopter-no" checked />
                                     <span class="radio-mark"></span>
-                                    No
+                                    No thanks
                                 </label>
+                            </div>
+                            
+                            <!-- Helicopter Package Options (shown conditionally) -->
+                            <div id="helicopter-options" class="helicopter-options" style="display: none; margin-top: 20px;">
+                                <div class="helicopter-info-box" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                                    <h4 style="margin: 0 0 10px 0; color: #495057;">🚁 Helicopter Adventure Package</h4>
+                                    <p style="margin: 0; font-size: 14px; color: #6c757d;">
+                                        Includes return helicopter transfer from OR Tambo, flying hours for scenic flights during your stay, 
+                                        and pilot accommodation. Package rates vary by stay duration.
+                                    </p>
+                                </div>
+                                
+                                <div class="helicopter-package-grid">
+                                    <label class="helicopter-package-option">
+                                        <input type="radio" name="helicopter_package" value="3-nights" />
+                                        <div class="package-details">
+                                            <span class="package-title">3 Nights Package</span>
+                                            <span class="package-hours">4 flying hours + 1 in-property hour</span>
+                                            <span class="package-price">R 154,000</span>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="helicopter-package-option">
+                                        <input type="radio" name="helicopter_package" value="4-nights" />
+                                        <div class="package-details">
+                                            <span class="package-title">4 Nights Package</span>
+                                            <span class="package-hours">5 flying hours + 2 in-property hours</span>
+                                            <span class="package-price">R 192,500</span>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="helicopter-package-option">
+                                        <input type="radio" name="helicopter_package" value="5-nights" />
+                                        <div class="package-details">
+                                            <span class="package-title">5 Nights Package</span>
+                                            <span class="package-hours">6 flying hours + 3 in-property hours</span>
+                                            <span class="package-price">R 231,000</span>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="helicopter-package-option">
+                                        <input type="radio" name="helicopter_package" value="6-nights" />
+                                        <div class="package-details">
+                                            <span class="package-title">6 Nights Package</span>
+                                            <span class="package-hours">7 flying hours + 4 in-property hours</span>
+                                            <span class="package-price">R 269,500</span>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="helicopter-package-option">
+                                        <input type="radio" name="helicopter_package" value="7-nights" />
+                                        <div class="package-details">
+                                            <span class="package-title">7 Nights Package</span>
+                                            <span class="package-hours">8 flying hours + 5 in-property hours</span>
+                                            <span class="package-price">R 308,000</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-left: 4px solid #2196f3; font-size: 14px;">
+                                    <strong>Additional flying time:</strong> R 38,500 per hour available upon request
+                                </div>
                             </div>
                         </div>
 
@@ -486,10 +553,37 @@ $atts = $args['attributes'] ?? array();
                 <!-- Cost Breakdown (Step 2+) -->
                 <div class="cost-breakdown">
                     <h4 class="breakdown-header">COST BREAKDOWN</h4>
+                    
+                    <!-- Season Information -->
+                    <div class="breakdown-section season-info" id="breakdown-season-info" style="display: none;">
+                        <div class="breakdown-season-header">
+                            <span class="season-badge" id="breakdown-season-badge">Standard Season</span>
+                            <span class="season-dates" id="breakdown-season-dates">Jan 6 - Feb 9</span>
+                        </div>
+                        <div class="breakdown-season-details">
+                            <div class="season-rate" id="breakdown-season-rate">R 92,400 per night (up to 4 guests)</div>
+                            <div class="season-nights" id="breakdown-season-nights">3 nights × R 92,400</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Nightly Breakdown -->
+                    <div class="breakdown-section nightly-breakdown" id="breakdown-nightly" style="display: none;">
+                        <div class="breakdown-nightly-header">
+                            <span class="nightly-title">Nightly Rate Details</span>
+                            <button type="button" class="nightly-toggle" onclick="toggleNightlyDetails()">
+                                <span class="toggle-text">Show Details</span>
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                        </div>
+                        <div class="breakdown-nightly-details" id="breakdown-nightly-details" style="display: none;">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
                     <div class="breakdown-details">
                         <div class="breakdown-item" id="breakdown-base-accommodation">
                             <span class="breakdown-item-label">Base Accommodation</span>
-                            <span class="breakdown-item-detail" id="breakdown-base-detail">2 adults, 0 nights</span>
+                            <span class="breakdown-item-detail" id="breakdown-base-detail">Up to 4 guests, 0 nights</span>
                             <span class="breakdown-item-amount" id="breakdown-base-amount">R 0</span>
                         </div>
                         <div class="breakdown-item" id="breakdown-extra-adults" style="display: none;">
@@ -507,9 +601,14 @@ $atts = $args['attributes'] ?? array();
                             <span class="breakdown-item-detail" id="breakdown-babies-detail">0 babies</span>
                             <span class="breakdown-item-amount" id="breakdown-babies-amount">Free</span>
                         </div>
+                        <div class="breakdown-item" id="breakdown-christmas-premium" style="display: none;">
+                            <span class="breakdown-item-label">Premium Christmas Surcharge</span>
+                            <span class="breakdown-item-detail" id="breakdown-christmas-detail">Dec 20 - Jan 1</span>
+                            <span class="breakdown-item-amount" id="breakdown-christmas-amount">R 0</span>
+                        </div>
                         <div class="breakdown-item" id="breakdown-helicopter" style="display: none;">
                             <span class="breakdown-item-label">Helicopter Package</span>
-                            <span class="breakdown-item-detail"></span>
+                            <span class="breakdown-item-detail" id="breakdown-helicopter-detail"></span>
                             <span class="breakdown-item-amount" id="breakdown-helicopter-amount">R 0</span>
                         </div>
                         <div class="breakdown-item" id="breakdown-transfer" style="display: none;">

@@ -60,6 +60,7 @@ class LeoboBookingForm {
         this.setupEventListeners();
         this.initializeGuestCounters(); // Initialize guest counters with correct values
         this.initializePlaceholders(); // Set initial placeholder text
+        this.setupHelicopterToggle(); // Initialize helicopter package toggle
         this.updateProgressIndicator();
         this.updateCostBreakdown(); // Initialize cost breakdown
         this.updateSidebarSummary(); // Ensure sidebar shows correct initial state
@@ -318,6 +319,7 @@ class LeoboBookingForm {
         // Generate calendar days
         const today = new Date();
         const seasonDates = this.config.season_dates || {};
+        const blockedDates = this.config.blocked_dates || [];
         
         for (let i = 0; i < 42; i++) { // 6 weeks
             const date = new Date(startDate);
@@ -327,16 +329,21 @@ class LeoboBookingForm {
             dayElement.className = 'calendar-day';
             dayElement.textContent = date.getDate();
             
-            // Add classes based on date status
+            const dateString = this.formatDate(date);
+            
+            // Add classes based on date status - PRIORITIZE BLOCKED DATES
             if (date.getMonth() !== this.calendar.currentDate.getMonth()) {
                 dayElement.classList.add('other-month');
+            } else if (blockedDates.includes(dateString)) {
+                // CHECK BLOCKED DATES FIRST - they take priority over past/future
+                dayElement.classList.add('blocked');
             } else if (date < today) {
                 dayElement.classList.add('past');
             } else {
                 dayElement.classList.add('available');
                 
                 // Add seasonal color coding
-                const season = this.getDateSeason(this.formatDate(date), seasonDates);
+                const season = this.getDateSeason(dateString, seasonDates);
                 if (season) {
                     dayElement.classList.add(`season-${season}`);
                 }
@@ -352,7 +359,7 @@ class LeoboBookingForm {
                 dayElement.classList.add('in-range');
             }
             
-            // Add click handler for available dates
+            // Add click handler for available dates only (not blocked)
             if (dayElement.classList.contains('available')) {
                 dayElement.addEventListener('click', () => this.selectDate(new Date(date)));
             }
@@ -365,6 +372,15 @@ class LeoboBookingForm {
     }
     
     selectDate(date) {
+        // Check if date is blocked
+        const dateString = this.formatDate(date);
+        const blockedDates = this.config.blocked_dates || [];
+        
+        if (blockedDates.includes(dateString)) {
+            alert('This date is not available for booking. Please select a different date.');
+            return;
+        }
+        
         if (!this.calendar.selectedStartDate || 
             (this.calendar.selectedStartDate && this.calendar.selectedEndDate)) {
             // Start new selection
@@ -373,13 +389,25 @@ class LeoboBookingForm {
             this.calendar.isSelectingRange = true;
         } else if (this.calendar.selectedStartDate && !this.calendar.selectedEndDate) {
             // Complete range selection
+            let startDate, endDate;
+            
             if (date <= this.calendar.selectedStartDate) {
                 // If selected date is before start date, make it the new start date
-                this.calendar.selectedEndDate = this.calendar.selectedStartDate;
-                this.calendar.selectedStartDate = new Date(date);
+                startDate = new Date(date);
+                endDate = this.calendar.selectedStartDate;
             } else {
-                this.calendar.selectedEndDate = new Date(date);
+                startDate = this.calendar.selectedStartDate;
+                endDate = new Date(date);
             }
+            
+            // Check if any dates in the range are blocked
+            if (this.hasBlockedDatesInRange(startDate, endDate)) {
+                alert('Your selected date range contains unavailable dates. Please select a different range.');
+                return;
+            }
+            
+            this.calendar.selectedStartDate = startDate;
+            this.calendar.selectedEndDate = endDate;
             this.calendar.isSelectingRange = false;
             
             // If both dates are selected, update pricing
@@ -394,6 +422,22 @@ class LeoboBookingForm {
         this.renderCalendar();
         this.updateDateDisplay();
         this.updateSidebarSummary(); // Add sidebar update
+    }
+    
+    // Helper method to check if a date range contains blocked dates
+    hasBlockedDatesInRange(startDate, endDate) {
+        const blockedDates = this.config.blocked_dates || [];
+        const current = new Date(startDate);
+        
+        while (current <= endDate) {
+            const dateString = this.formatDate(current);
+            if (blockedDates.includes(dateString)) {
+                return true;
+            }
+            current.setDate(current.getDate() + 1);
+        }
+        
+        return false;
     }
     
     clearDates() {
@@ -485,6 +529,40 @@ class LeoboBookingForm {
                 });
             }
         });
+    }
+    
+    setupHelicopterToggle() {
+        // Handle helicopter interest toggle
+        const helicopterYes = document.getElementById('helicopter-yes');
+        const helicopterNo = document.getElementById('helicopter-no');
+        const helicopterOptions = document.getElementById('helicopter-options');
+        
+        if (helicopterYes && helicopterNo && helicopterOptions) {
+            helicopterYes.addEventListener('change', () => {
+                if (helicopterYes.checked) {
+                    helicopterOptions.style.display = 'block';
+                    // Smooth animation
+                    setTimeout(() => {
+                        helicopterOptions.style.opacity = '1';
+                    }, 10);
+                }
+            });
+            
+            helicopterNo.addEventListener('change', () => {
+                if (helicopterNo.checked) {
+                    helicopterOptions.style.opacity = '0';
+                    setTimeout(() => {
+                        helicopterOptions.style.display = 'none';
+                        // Clear any selected helicopter package
+                        document.querySelectorAll('input[name="helicopter_package"]').forEach(input => {
+                            input.checked = false;
+                        });
+                        this.formData.extras.helicopter_package = null;
+                        this.updatePricing();
+                    }, 300);
+                }
+            });
+        }
     }
     
     setupFormSubmission() {
@@ -713,7 +791,12 @@ class LeoboBookingForm {
             date = new Date(date);
         }
         if (isNaN(date.getTime())) return '';
-        return date.toISOString().split('T')[0];
+        
+        // Use timezone-safe formatting to avoid UTC conversion issues
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
     
     formatDisplayDate(date) {
@@ -811,7 +894,7 @@ class LeoboBookingForm {
         legend.id = 'season-legend';
         legend.className = 'season-legend';
         legend.innerHTML = `
-            <div class="legend-title">Season Pricing</div>
+            <div class="legend-title">Calendar Legend</div>
             <div class="legend-items">
                 <div class="legend-item">
                     <div class="legend-color season-standard"></div>
@@ -824,6 +907,10 @@ class LeoboBookingForm {
                 <div class="legend-item">
                     <div class="legend-color season-christmas"></div>
                     <span>Christmas Season</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color blocked"></div>
+                    <span>Unavailable</span>
                 </div>
             </div>
         `;
@@ -1240,6 +1327,12 @@ class LeoboBookingForm {
         if (hasPricing && this.formData.pricing.breakdown && this.formData.pricing.breakdown.length > 0) {
             breakdownDetails.classList.add('has-pricing');
             
+            // Update season information
+            this.updateSeasonBreakdown();
+            
+            // Update nightly breakdown details
+            this.updateNightlyBreakdown();
+            
             // Calculate guest breakdown from nightly breakdown data
             const breakdown = this.calculateGuestBreakdown();
             
@@ -1247,15 +1340,14 @@ class LeoboBookingForm {
             console.log('Pricing breakdown data:', this.formData.pricing.breakdown);
             console.log('Calculated breakdown:', breakdown);
             
-            // Update base accommodation (includes 2 adults)
+            // Update base accommodation (includes up to 4 guests)
             const baseAmount = document.getElementById('breakdown-base-amount');
             const baseDetail = document.getElementById('breakdown-base-detail');
             if (baseAmount && breakdown.baseTotal > 0) {
-                // Ensure we have a valid number before formatting
                 const baseValue = isNaN(breakdown.baseTotal) ? 0 : breakdown.baseTotal;
                 baseAmount.textContent = `R ${this.formatPrice(baseValue)}`;
                 if (baseDetail && this.formData.pricing.nights) {
-                    baseDetail.textContent = `2 adults, ${this.formData.pricing.nights} night${this.formData.pricing.nights !== 1 ? 's' : ''}`;
+                    baseDetail.textContent = `Up to 4 guests, ${this.formData.pricing.nights} night${this.formData.pricing.nights !== 1 ? 's' : ''}`;
                 }
             }
             
@@ -1265,7 +1357,7 @@ class LeoboBookingForm {
             if (extraAdultsAmount && breakdown.extraAdults > 0) {
                 const extraAdultValue = isNaN(breakdown.extraAdultTotal) ? 0 : breakdown.extraAdultTotal;
                 extraAdultsAmount.textContent = `R ${this.formatPrice(extraAdultValue)}`;
-                extraAdultsDetail.textContent = `${breakdown.extraAdults} additional adult${breakdown.extraAdults !== 1 ? 's' : ''}`;
+                extraAdultsDetail.textContent = `${breakdown.extraAdults} additional adult${breakdown.extraAdults !== 1 ? 's' : ''} × ${this.formData.pricing.nights} nights`;
                 document.getElementById('breakdown-extra-adults')?.style.setProperty('display', 'flex');
             } else {
                 document.getElementById('breakdown-extra-adults')?.style.setProperty('display', 'none');
@@ -1278,10 +1370,11 @@ class LeoboBookingForm {
                 const childrenValue = isNaN(breakdown.childrenTotal) ? 0 : breakdown.childrenTotal;
                 if (childrenValue > 0) {
                     childrenAmount.textContent = `R ${this.formatPrice(childrenValue)}`;
+                    childrenDetail.textContent = `${this.formData.guests.children} child${this.formData.guests.children !== 1 ? 'ren' : ''} × ${this.formData.pricing.nights} nights`;
                 } else {
-                    childrenAmount.textContent = 'Free';
+                    childrenAmount.textContent = 'Included';
+                    childrenDetail.textContent = `${this.formData.guests.children} child${this.formData.guests.children !== 1 ? 'ren' : ''} (included in base rate)`;
                 }
-                childrenDetail.textContent = `${this.formData.guests.children} child${this.formData.guests.children !== 1 ? 'ren' : ''}`;
                 document.getElementById('breakdown-children')?.style.setProperty('display', 'flex');
             } else {
                 document.getElementById('breakdown-children')?.style.setProperty('display', 'none');
@@ -1292,35 +1385,35 @@ class LeoboBookingForm {
             const babiesDetail = document.getElementById('breakdown-babies-detail');
             if (babiesAmount && this.formData.guests.babies > 0) {
                 babiesAmount.textContent = 'Free';
-                babiesDetail.textContent = `${this.formData.guests.babies} bab${this.formData.guests.babies !== 1 ? 'ies' : 'y'}`;
+                babiesDetail.textContent = `${this.formData.guests.babies} bab${this.formData.guests.babies !== 1 ? 'ies' : 'y'} (0-4 years stay free)`;
                 document.getElementById('breakdown-babies')?.style.setProperty('display', 'flex');
             } else {
                 document.getElementById('breakdown-babies')?.style.setProperty('display', 'none');
             }
             
-            // Update helicopter package breakdown
+            // Update Christmas premium surcharge
+            this.updateChristmasPremium(breakdown);
+            
+            // Update helicopter package breakdown - only show if explicitly selected
             const helicopterAmount = document.getElementById('breakdown-helicopter-amount');
-            if (helicopterAmount) {
-                if (this.formData.pricing.extras > 0) {
+            const helicopterDetail = document.getElementById('breakdown-helicopter-detail');
+            const helicopterItem = document.getElementById('breakdown-helicopter');
+            
+            if (helicopterAmount && helicopterItem) {
+                // Check if helicopter package is actually selected (not just pricing > 0)
+                const helicopterSelected = this.formData.extras.helicopter_package && 
+                                         this.formData.extras.helicopter_package !== null && 
+                                         this.formData.extras.helicopter_package !== 'no';
+                
+                if (helicopterSelected && this.formData.pricing.extras > 0) {
                     helicopterAmount.textContent = `R ${this.formatPrice(this.formData.pricing.extras)}`;
-                    document.getElementById('breakdown-helicopter')?.style.setProperty('display', 'flex');
+                    if (helicopterDetail) {
+                        helicopterDetail.textContent = `${this.formData.pricing.nights} nights package`;
+                    }
+                    helicopterItem.style.display = 'flex';
                 } else {
-                    document.getElementById('breakdown-helicopter')?.style.setProperty('display', 'none');
+                    helicopterItem.style.display = 'none';
                 }
-            }
-            
-            // Update transfer breakdown (if available in future)
-            const transferAmount = document.getElementById('breakdown-transfer-amount');
-            if (transferAmount) {
-                // For now, transfers are not separately tracked in pricing data
-                document.getElementById('breakdown-transfer')?.style.setProperty('display', 'none');
-            }
-            
-            // Update experiences breakdown (if available in future)
-            const experiencesAmount = document.getElementById('breakdown-experiences-amount');
-            if (experiencesAmount) {
-                // For now, experiences are not separately tracked in pricing data
-                document.getElementById('breakdown-experiences')?.style.setProperty('display', 'none');
             }
             
             // Update subtotal
@@ -1330,6 +1423,9 @@ class LeoboBookingForm {
             }
         } else {
             breakdownDetails.classList.remove('has-pricing');
+            // Hide enhanced sections when no pricing
+            document.getElementById('breakdown-season-info')?.style.setProperty('display', 'none');
+            document.getElementById('breakdown-nightly')?.style.setProperty('display', 'none');
         }
     }
     
@@ -1338,6 +1434,7 @@ class LeoboBookingForm {
         let baseTotal = 0;
         let extraAdultTotal = 0;
         let childrenTotal = 0;
+        let christmasTotal = 0;
         
         if (this.formData.pricing.breakdown && this.formData.pricing.breakdown.length > 0) {
             this.formData.pricing.breakdown.forEach(night => {
@@ -1345,19 +1442,133 @@ class LeoboBookingForm {
                 baseTotal += parseFloat(night.base_rate) || 0;
                 extraAdultTotal += parseFloat(night.extra_adult_cost) || 0;
                 childrenTotal += parseFloat(night.extra_child_cost) || 0;
+                christmasTotal += parseFloat(night.surcharge) || 0;
             });
         }
         
-        // Calculate extra adults count (assuming base rate includes 2 adults)
-        const includedAdults = 2;
-        const extraAdults = Math.max(0, this.formData.guests.adults - includedAdults);
+        // Calculate number of extra adults beyond the 4 guests included in base rate
+        const totalGuests = this.formData.guests.adults + this.formData.guests.children;
+        const extraAdults = Math.max(0, this.formData.guests.adults - Math.min(4, totalGuests));
         
         return {
-            baseTotal: Math.round(baseTotal * 100) / 100, // Ensure proper rounding
-            extraAdults: extraAdults,
-            extraAdultTotal: Math.round(extraAdultTotal * 100) / 100,
-            childrenTotal: Math.round(childrenTotal * 100) / 100
+            baseTotal: baseTotal,
+            extraAdultTotal: extraAdultTotal,
+            childrenTotal: childrenTotal,
+            christmasTotal: christmasTotal,
+            extraAdults: extraAdults
         };
+    }
+    
+    updateSeasonBreakdown() {
+        const seasonInfo = document.getElementById('breakdown-season-info');
+        const seasonBadge = document.getElementById('breakdown-season-badge');
+        const seasonDates = document.getElementById('breakdown-season-dates');
+        const seasonRate = document.getElementById('breakdown-season-rate');
+        const seasonNights = document.getElementById('breakdown-season-nights');
+        
+        if (!seasonInfo || !this.formData.pricing.breakdown || this.formData.pricing.breakdown.length === 0) {
+            return;
+        }
+        
+        // Analyze the seasons in the booking
+        const seasonAnalysis = this.analyzeSeasons();
+        
+        if (seasonAnalysis.seasonText) {
+            seasonInfo.style.display = 'block';
+            
+            // Update season badge
+            if (seasonBadge) {
+                seasonBadge.textContent = seasonAnalysis.seasonText;
+                seasonBadge.className = `season-badge ${seasonAnalysis.cssClass}`;
+            }
+            
+            // Update season dates
+            if (seasonDates && this.formData.dates.checkin && this.formData.dates.checkout) {
+                const checkinDate = new Date(this.formData.dates.checkin);
+                const checkoutDate = new Date(this.formData.dates.checkout);
+                const checkinStr = checkinDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                const checkoutStr = checkoutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                seasonDates.textContent = `${checkinStr} - ${checkoutStr}`;
+            }
+            
+            // Calculate average base rate
+            if (seasonRate && seasonNights) {
+                const totalBaseRate = this.formData.pricing.breakdown.reduce((sum, night) => {
+                    return sum + (parseFloat(night.base_rate) || 0);
+                }, 0);
+                const avgRate = totalBaseRate / this.formData.pricing.breakdown.length;
+                
+                seasonRate.textContent = `R ${this.formatPrice(avgRate)} per night (up to 4 guests)`;
+                seasonNights.textContent = `${this.formData.pricing.nights} nights × R ${this.formatPrice(avgRate)}`;
+            }
+        } else {
+            seasonInfo.style.display = 'none';
+        }
+    }
+    
+    updateNightlyBreakdown() {
+        const nightlySection = document.getElementById('breakdown-nightly');
+        const nightlyDetails = document.getElementById('breakdown-nightly-details');
+        
+        if (!nightlySection || !nightlyDetails || !this.formData.pricing.breakdown || this.formData.pricing.breakdown.length === 0) {
+            return;
+        }
+        
+        nightlySection.style.display = 'block';
+        
+        // Clear existing details
+        nightlyDetails.innerHTML = '';
+        
+        // Add each night's breakdown
+        this.formData.pricing.breakdown.forEach((night, index) => {
+            const nightDate = new Date(night.date);
+            const dateStr = nightDate.toLocaleDateString('en-GB', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short' 
+            });
+            
+            const nightlyItem = document.createElement('div');
+            nightlyItem.className = 'nightly-item';
+            
+            const hasChristmasExtra = parseFloat(night.surcharge) > 0;
+            const christmasIndicator = hasChristmasExtra ? '<span class="christmas-premium-indicator">+50k</span>' : '';
+            
+            nightlyItem.innerHTML = `
+                <span class="nightly-date">${dateStr}</span>
+                <span class="nightly-season ${night.season || 'standard'}">${this.formatSeasonName(night.season || 'standard')}</span>
+                <span class="nightly-rate">R ${this.formatPrice(night.total)}${christmasIndicator}</span>
+            `;
+            
+            nightlyDetails.appendChild(nightlyItem);
+        });
+    }
+    
+    updateChristmasPremium(breakdown) {
+        const christmasItem = document.getElementById('breakdown-christmas-premium');
+        const christmasAmount = document.getElementById('breakdown-christmas-amount');
+        const christmasDetail = document.getElementById('breakdown-christmas-detail');
+        
+        if (breakdown.christmasTotal > 0) {
+            if (christmasAmount) {
+                christmasAmount.textContent = `R ${this.formatPrice(breakdown.christmasTotal)}`;
+            }
+            if (christmasDetail) {
+                const christmasNights = this.formData.pricing.breakdown.filter(night => 
+                    parseFloat(night.surcharge) > 0
+                ).length;
+                christmasDetail.textContent = `${christmasNights} night${christmasNights !== 1 ? 's' : ''} @ R 50,000/night`;
+            }
+            if (christmasItem) {
+                christmasItem.style.display = 'flex';
+                christmasItem.classList.add('premium-item');
+            }
+        } else {
+            if (christmasItem) {
+                christmasItem.style.display = 'none';
+                christmasItem.classList.remove('premium-item');
+            }
+        }
     }
     
     formatPrice(amount) {
@@ -1487,6 +1698,24 @@ class LeoboBookingForm {
         };
         
         field.addEventListener('input', removeError);
+    }
+}
+
+// Global function to toggle nightly details
+function toggleNightlyDetails() {
+    const details = document.getElementById('breakdown-nightly-details');
+    const toggle = document.querySelector('.nightly-toggle');
+    
+    if (details && toggle) {
+        if (details.style.display === 'none' || !details.style.display) {
+            details.style.display = 'block';
+            toggle.classList.add('expanded');
+            toggle.querySelector('.toggle-text').textContent = 'Hide Details';
+        } else {
+            details.style.display = 'none';
+            toggle.classList.remove('expanded');
+            toggle.querySelector('.toggle-text').textContent = 'Show Details';
+        }
     }
 }
 

@@ -130,22 +130,32 @@ class LeoboBookingPricing {
         $season = $this->detect_season($date);
         $season_data = $this->seasons_data[$season];
         
-        // Base rate (typically includes 2 adults) - provide fallback if ACF not configured
-        $base_rate = $season_data['base_rate'] ?: 12500;
+        // Base rate includes up to 4 guests - provide fallback if ACF not configured
+        $base_rate = $season_data['base_rate'] ?: 92400;
         
-        // Calculate extra adults (assuming base rate includes 2 adults)
-        $included_adults = 2;
-        $extra_adults = max(0, $adults - $included_adults);
-        $extra_adult_cost = $extra_adults * ($season_data['extra_adult'] ?: 2500);
+        // Calculate extra adults (base rate includes up to 4 guests total)
+        $included_guests = 4;
+        $total_guests = $adults + $children;
+        $extra_guests = max(0, $total_guests - $included_guests);
+        
+        // Only charge for extra adults (children are included in the 4 guests or charged separately)
+        $extra_adults = max(0, $adults - min($adults, $included_guests));
+        $extra_adult_cost = $extra_adults * ($season_data['extra_adult'] ?: 23100);
         
         // Calculate paying children (5-11 years old)
-        // Assuming all children passed are in the paying age range
-        $extra_child_cost = $children * ($season_data['extra_child'] ?: 1250);
+        // Children count towards the 4 guests, but if over 4 total guests, children are charged
+        $paying_children = 0;
+        if ($total_guests > $included_guests) {
+            // If we have more than 4 guests total, charge for children separately
+            $paying_children = $children;
+        }
+        $extra_child_cost = $paying_children * ($season_data['extra_child'] ?: 11550);
         
-        // Christmas surcharge
+        // Premium Christmas surcharge (20 Dec - 1 Jan gets additional 50,000 ZAR per night)
         $surcharge = 0;
-        if ($season === 'christmas' && isset($season_data['surcharge'])) {
-            $surcharge = $season_data['surcharge'] ?: 0;
+        $christmas_period = $this->is_premium_christmas_period($date);
+        if ($christmas_period) {
+            $surcharge = 50000; // Fixed 50,000 ZAR surcharge during premium Christmas period
         }
         
         $total = $base_rate + $extra_adult_cost + $extra_child_cost + $surcharge;
@@ -156,10 +166,29 @@ class LeoboBookingPricing {
             'extra_adult_cost' => $extra_adult_cost,
             'extra_child_cost' => $extra_child_cost,
             'surcharge' => $surcharge,
-            'total' => $total
+            'total' => $total,
+            'christmas_premium' => $christmas_period
         );
     }
     
+    /**
+     * Check if date falls within premium Christmas period (20 Dec - 1 Jan)
+     */
+    private function is_premium_christmas_period($date) {
+        $year = $date->format('Y');
+        
+        // Premium Christmas period: 20 Dec - 1 Jan
+        $christmas_start = DateTime::createFromFormat('Y-m-d', $year . '-12-20');
+        $christmas_end = DateTime::createFromFormat('Y-m-d', ($year + 1) . '-01-01');
+        
+        // Also check for previous year's December dates in case we're in January
+        $prev_christmas_start = DateTime::createFromFormat('Y-m-d', ($year - 1) . '-12-20');
+        $prev_christmas_end = DateTime::createFromFormat('Y-m-d', $year . '-01-01');
+        
+        return ($date >= $christmas_start && $date <= $christmas_end) || 
+               ($date >= $prev_christmas_start && $date <= $prev_christmas_end);
+    }
+
     /**
      * Detect season for a specific date
      */
@@ -204,32 +233,51 @@ class LeoboBookingPricing {
     }
     
     /**
-     * Calculate helicopter package cost
+     * Calculate helicopter package cost based on PDF rates
      */
     private function calculate_helicopter_package($nights, $package_request) {
-        // Find matching package for number of nights
-        $matching_package = null;
-        foreach ($this->packages_data as $package) {
-            if ($package['heli_nights'] == $nights) {
-                $matching_package = $package;
-                break;
+        // Helicopter adventure package rates from PDF
+        $helicopter_rates = array(
+            3 => array('rate' => 154000, 'flying_hours' => 4, 'in_property_hours' => 1),
+            4 => array('rate' => 192500, 'flying_hours' => 5, 'in_property_hours' => 2),
+            5 => array('rate' => 231000, 'flying_hours' => 6, 'in_property_hours' => 3),
+            6 => array('rate' => 269500, 'flying_hours' => 7, 'in_property_hours' => 4),
+            7 => array('rate' => 308000, 'flying_hours' => 8, 'in_property_hours' => 5)
+        );
+        
+        // Additional flying time rate: 38,500 ZAR per hour
+        $additional_hour_rate = 38500;
+        
+        // Check if we have a direct match for nights
+        if (isset($helicopter_rates[$nights])) {
+            $package_data = $helicopter_rates[$nights];
+            $package_rate = $package_data['rate'];
+            $included_hours = $package_data['flying_hours'];
+            $in_property_hours = $package_data['in_property_hours'];
+        } else {
+            // For other night durations, try to find from ACF or return error
+            $matching_package = null;
+            foreach ($this->packages_data as $package) {
+                if ($package['heli_nights'] == $nights) {
+                    $matching_package = $package;
+                    break;
+                }
             }
+            
+            if (!$matching_package) {
+                return array('error' => "No helicopter package available for {$nights} nights");
+            }
+            
+            $package_rate = $matching_package['heli_package_rate'];
+            $included_hours = $matching_package['heli_flying_hours'];
+            $in_property_hours = $matching_package['heli_in_property_hours'];
         }
-        
-        if (!$matching_package) {
-            return array('error' => "No helicopter package available for {$nights} nights");
-        }
-        
-        $package_rate = $matching_package['heli_package_rate'];
-        $included_hours = $matching_package['heli_flying_hours'];
-        $in_property_hours = $matching_package['heli_in_property_hours'];
         
         // Calculate additional hours if requested
         $additional_hours = 0;
         $additional_cost = 0;
         if (isset($package_request['additional_hours']) && $package_request['additional_hours'] > 0) {
             $additional_hours = $package_request['additional_hours'];
-            $additional_hour_rate = get_field('heli_additional_hour', 'option') ?: 0;
             $additional_cost = $additional_hours * $additional_hour_rate;
         }
         
@@ -316,25 +364,35 @@ class LeoboBookingPricing {
      * Get all seasons data from ACF options page
      */
     public function get_seasons_data() {
+        // Read ACF values and track which are from ACF vs fallbacks
+        $standard_base = get_field('standard_base_rate', 'option');
+        $peak_base = get_field('peak_base_rate', 'option');
+        $christmas_base = get_field('christmas_base_rate', 'option');
+        
+        // Log warnings if using fallback values
+        if (empty($standard_base) || empty($peak_base)) {
+            error_log('Leobo Booking System Warning: Using fallback rates. Please configure ACF fields in Booking Config.');
+        }
+        
         return array(
             'standard' => array(
                 'dates' => get_field('standard_season_dates', 'option') ?: array(),
-                'base_rate' => get_field('standard_base_rate', 'option') ?: 12500,
-                'extra_adult' => get_field('standard_extra_adult', 'option') ?: 2500,
-                'extra_child' => get_field('standard_extra_child', 'option') ?: 1250
+                'base_rate' => $standard_base ?: 92400,  // 92,400 ZAR per night (up to 4 guests) - FALLBACK
+                'extra_adult' => get_field('standard_extra_adult', 'option') ?: 23100,  // 23,100 ZAR per extra adult - FALLBACK
+                'extra_child' => get_field('standard_extra_child', 'option') ?: 11550   // 11,550 ZAR per child (5-11 yrs) - FALLBACK
             ),
             'peak' => array(
                 'dates' => get_field('peak_season_dates', 'option') ?: array(),
-                'base_rate' => get_field('peak_base_rate', 'option') ?: 18500,
-                'extra_adult' => get_field('peak_extra_adult', 'option') ?: 3500,
-                'extra_child' => get_field('peak_extra_child', 'option') ?: 1750
+                'base_rate' => $peak_base ?: 138600,  // 138,600 ZAR per night (up to 4 guests) - FALLBACK
+                'extra_adult' => get_field('peak_extra_adult', 'option') ?: 34650,  // 34,650 ZAR per extra adult - FALLBACK
+                'extra_child' => get_field('peak_extra_child', 'option') ?: 17325   // 17,325 ZAR per child (5-11 yrs) - FALLBACK
             ),
             'christmas' => array(
                 'dates' => get_field('christmas_dates', 'option') ?: array(),
-                'base_rate' => get_field('christmas_base_rate', 'option') ?: 25000,
-                'extra_adult' => get_field('christmas_extra_adult', 'option') ?: 5000,
-                'extra_child' => get_field('christmas_extra_child', 'option') ?: 2500,
-                'surcharge' => get_field('christmas_surcharge', 'option') ?: 5000
+                'base_rate' => $christmas_base ?: 138600,  // Uses Peak rates as base - FALLBACK
+                'extra_adult' => get_field('christmas_extra_adult', 'option') ?: 34650,  // Uses Peak rates - FALLBACK
+                'extra_child' => get_field('christmas_extra_child', 'option') ?: 17325,  // Uses Peak rates - FALLBACK
+                'surcharge' => 50000  // Premium Christmas surcharge is now handled separately
             )
         );
     }
@@ -351,9 +409,9 @@ class LeoboBookingPricing {
      */
     public function get_guest_rules() {
         return array(
-            'max_adults' => get_field('max_adults', 'option') ?: 8,
-            'max_children' => get_field('max_children', 'option') ?: 4,
-            'children_free_age' => get_field('children_free_age', 'option') ?: 4
+            'max_adults' => get_field('max_adults', 'option') ?: 6,  // Maximum 6 adults in house
+            'max_children' => get_field('max_children', 'option') ?: 8,  // Allow more children
+            'children_free_age' => get_field('children_free_age', 'option') ?: 4  // Children 0-4 stay free
         );
     }
 
@@ -362,7 +420,7 @@ class LeoboBookingPricing {
      */
     public function get_minimum_nights_rules() {
         return array(
-            'default' => get_field('default_min_nights', 'option') ?: 3,
+            'default' => get_field('default_min_nights', 'option') ?: 2,  // Minimum 2 nights throughout the year
             'special' => get_field('special_min_nights', 'option') ?: array(),
             'half_terms' => get_field('half_terms', 'option') ?: array()
         );
@@ -381,7 +439,7 @@ class LeoboBookingPricing {
                 'name' => $accommodation['name'],
                 'description' => 'Luxury accommodation with premium amenities',
                 'capacity' => $accommodation['max_guests'],
-                'base_rate' => $this->seasons_data['standard']['base_rate'] ?: 12500,
+                'base_rate' => $this->seasons_data['standard']['base_rate'] ?: 92400,
                 'image' => 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjNlbSIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QWNjb21tb2RhdGlvbjwvdGV4dD48L3N2Zz4='
             );
         }
