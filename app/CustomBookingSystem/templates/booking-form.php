@@ -85,7 +85,7 @@ $atts = $args['attributes'] ?? array();
                                 <label class="guest-label">Adults</label>
                                 <div class="guest-counter">
                                     <button type="button" class="counter-btn minus" data-target="adults">-</button>
-                                    <span class="counter-value" id="adults-count">3</span>
+                                    <span class="counter-value" id="adults-count">1</span>
                                     <button type="button" class="counter-btn plus" data-target="adults">+</button>
                                 </div>
                             </div>
@@ -95,7 +95,7 @@ $atts = $args['attributes'] ?? array();
                                 <label class="guest-label">Children (4+ years)</label>
                                 <div class="guest-counter">
                                     <button type="button" class="counter-btn minus" data-target="children">-</button>
-                                    <span class="counter-value" id="children-count">4</span>
+                                    <span class="counter-value" id="children-count">0</span>
                                     <button type="button" class="counter-btn plus" data-target="children">+</button>
                                 </div>
                             </div>
@@ -105,15 +105,15 @@ $atts = $args['attributes'] ?? array();
                                 <label class="guest-label">Baby (0-3 years)</label>
                                 <div class="guest-counter">
                                     <button type="button" class="counter-btn minus" data-target="babies">-</button>
-                                    <span class="counter-value" id="babies-count">2</span>
+                                    <span class="counter-value" id="babies-count">0</span>
                                     <button type="button" class="counter-btn plus" data-target="babies">+</button>
                                 </div>
                             </div>
                             
                             <!-- Hidden inputs -->
-                            <input type="hidden" id="adults" name="adults" value="3" />
-                            <input type="hidden" id="children" name="children" value="4" />
-                            <input type="hidden" id="babies" name="babies" value="2" />
+                            <input type="hidden" id="adults" name="adults" value="1" />
+                            <input type="hidden" id="children" name="children" value="0" />
+                            <input type="hidden" id="babies" name="babies" value="0" />
                         </div>
 
                         <!-- What's Included Section -->
@@ -416,6 +416,9 @@ $atts = $args['attributes'] ?? array();
                     <div class="dates-summary" id="dates-summary">
                         <div class="date-range">12th Jan - 5th Feb</div>
                         <div class="nights-count">(16 nights)</div>
+                        <div class="season-info" id="season-info" style="display: none;">
+                            <span class="season-label" id="season-display"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -432,6 +435,53 @@ $atts = $args['attributes'] ?? array();
                     <h4 class="summary-title">OPTIONAL EXTRAS</h4>
                     <div class="extras-summary" id="extras-summary">
                         <div class="price-amount" id="extras-price">R 22,500</div>
+                    </div>
+                </div>
+
+                <!-- Cost Breakdown (Step 2+) -->
+                <div class="cost-breakdown">
+                    <h4 class="breakdown-header">COST BREAKDOWN</h4>
+                    <div class="breakdown-details">
+                        <div class="breakdown-item" id="breakdown-base-accommodation">
+                            <span class="breakdown-item-label">Base Accommodation</span>
+                            <span class="breakdown-item-detail" id="breakdown-base-detail">2 adults, 0 nights</span>
+                            <span class="breakdown-item-amount" id="breakdown-base-amount">R 0</span>
+                        </div>
+                        <div class="breakdown-item" id="breakdown-extra-adults" style="display: none;">
+                            <span class="breakdown-item-label">Additional Adults</span>
+                            <span class="breakdown-item-detail" id="breakdown-extra-adults-detail">0 adults</span>
+                            <span class="breakdown-item-amount" id="breakdown-extra-adults-amount">R 0</span>
+                        </div>
+                        <div class="breakdown-item" id="breakdown-children" style="display: none;">
+                            <span class="breakdown-item-label">Children (5-11 years)</span>
+                            <span class="breakdown-item-detail" id="breakdown-children-detail">0 children</span>
+                            <span class="breakdown-item-amount" id="breakdown-children-amount">R 0</span>
+                        </div>
+                        <div class="breakdown-item" id="breakdown-babies" style="display: none;">
+                            <span class="breakdown-item-label">Babies (0-4 years)</span>
+                            <span class="breakdown-item-detail" id="breakdown-babies-detail">0 babies</span>
+                            <span class="breakdown-item-amount" id="breakdown-babies-amount">Free</span>
+                        </div>
+                        <div class="breakdown-item" id="breakdown-helicopter" style="display: none;">
+                            <span class="breakdown-item-label">Helicopter Package</span>
+                            <span class="breakdown-item-detail"></span>
+                            <span class="breakdown-item-amount" id="breakdown-helicopter-amount">R 0</span>
+                        </div>
+                        <div class="breakdown-item" id="breakdown-transfer" style="display: none;">
+                            <span class="breakdown-item-label">Transfer</span>
+                            <span class="breakdown-item-detail"></span>
+                            <span class="breakdown-item-amount" id="breakdown-transfer-amount">R 0</span>
+                        </div>
+                        <div class="breakdown-item" id="breakdown-experiences" style="display: none;">
+                            <span class="breakdown-item-label">Experiences</span>
+                            <span class="breakdown-item-detail"></span>
+                            <span class="breakdown-item-amount" id="breakdown-experiences-amount">R 0</span>
+                        </div>
+                        <div class="breakdown-divider"></div>
+                        <div class="breakdown-subtotal">
+                            <span class="breakdown-subtotal-label">Subtotal</span>
+                            <span class="breakdown-subtotal-amount" id="breakdown-subtotal-amount">R 0</span>
+                        </div>
                     </div>
                 </div>
 

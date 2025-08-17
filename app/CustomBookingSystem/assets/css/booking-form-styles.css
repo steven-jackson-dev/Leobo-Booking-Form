@@ -150,10 +150,6 @@
     display: block;
 }
 
-.step-content {
-    max-width: 600px;
-}
-
 .step-title {
     font-size: var(--font-size-3xl);
     font-weight: 300;
@@ -578,6 +574,46 @@
     color: var(--text-muted);
 }
 
+.season-info {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.season-label {
+    display: inline-block;
+}
+
+/* Season-specific styling */
+.season-info.christmas {
+    background: rgba(220, 38, 127, 0.15);
+    color: #dc267f;
+    border: 1px solid rgba(220, 38, 127, 0.3);
+}
+
+.season-info.peak {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ff8f00;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.season-info.standard {
+    background: rgba(76, 175, 80, 0.15);
+    color: #388e3c;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+/* Mixed seasons styling */
+.season-info.mixed {
+    background: rgba(156, 39, 176, 0.15);
+    color: #7b1fa2;
+    border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
 .price-display,
 .total-price-display {
     text-align: left;
@@ -591,6 +627,114 @@
 
 .price-amount.total {
     font-size: var(--font-size-2xl);
+}
+
+/* ====================
+   COST BREAKDOWN
+   ==================== */
+
+.cost-breakdown {
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-md) 0;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.breakdown-header {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    text-transform: uppercase;
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.5px;
+}
+
+.breakdown-details {
+    display: none;
+}
+
+.breakdown-details.has-pricing {
+    display: block;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: var(--font-size-sm);
+}
+
+.breakdown-item:last-child {
+    border-bottom: none;
+}
+
+.breakdown-item-label {
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.breakdown-item-detail {
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+    margin-left: var(--spacing-sm);
+    flex: 0 0 auto;
+}
+
+.breakdown-item-amount {
+    color: var(--leobo-gold);
+    font-weight: 500;
+    text-align: right;
+    min-width: 80px;
+}
+
+.breakdown-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--spacing-md) 0;
+}
+
+.breakdown-subtotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) 0 var(--spacing-sm) 0;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-top: 2px solid var(--leobo-gold);
+    margin-top: var(--spacing-md);
+}
+
+.breakdown-subtotal-label {
+    text-transform: uppercase;
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.5px;
+}
+
+.breakdown-subtotal-amount {
+    color: var(--leobo-gold);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
+/* Responsive adjustments for breakdown */
+@media (max-width: 768px) {
+    .breakdown-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .breakdown-item-amount {
+        align-self: flex-end;
+        min-width: auto;
+    }
+    
+    .breakdown-item-detail {
+        margin-left: 0;
+        align-self: flex-start;
+    }
 }
 
 /* ====================
@@ -890,4 +1034,190 @@
 
 .btn:hover::before {
     left: 100%;
+}
+
+/* ====================
+   HOTEL DATEPICKER CUSTOMIZATION
+   ==================== */
+
+/* Override Hotel Datepicker theme to match Leobo design */
+.datepicker {
+    font-family: var(--font-family);
+    background: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.datepicker__topbar {
+    background: var(--background-light);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: var(--spacing-md);
+}
+
+.datepicker__topbar-selected {
+    color: var(--leobo-gold);
+    font-weight: 600;
+}
+
+.datepicker__months {
+    background: var(--background-dark);
+}
+
+.datepicker__month-button {
+    background: var(--background-light);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+}
+
+.datepicker__month-button:hover {
+    background: var(--leobo-gold);
+    color: var(--background-dark);
+}
+
+.datepicker__month-button--prev,
+.datepicker__month-button--next {
+    background: var(--background-light);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.datepicker__month-button--prev:hover,
+.datepicker__month-button--next:hover {
+    background: var(--leobo-gold);
+    color: var(--background-dark);
+}
+
+.datepicker__month-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+}
+
+.datepicker__week-days {
+    background: var(--background-light);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.datepicker__week-day {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.datepicker__month-day {
+    color: var(--text-primary);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.datepicker__month-day:hover {
+    background: var(--background-light);
+    border-color: var(--leobo-gold);
+}
+
+.datepicker__month-day--selected {
+    background: var(--leobo-gold) !important;
+    color: var(--background-dark) !important;
+    font-weight: 600;
+}
+
+.datepicker__month-day--first-day-selected,
+.datepicker__month-day--last-day-selected {
+    background: var(--leobo-gold) !important;
+    color: var(--background-dark) !important;
+}
+
+.datepicker__month-day--between {
+    background: rgba(218, 165, 32, 0.2) !important;
+    color: var(--text-primary) !important;
+}
+
+.datepicker__month-day--disabled {
+    color: var(--text-muted) !important;
+    background: var(--background-dark) !important;
+    position: relative;
+}
+
+.datepicker__month-day--disabled::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: var(--text-muted);
+    transform: translateY(-50%);
+}
+
+.datepicker__month-day--no-check-in,
+.datepicker__month-day--no-check-out {
+    background: rgba(214, 54, 56, 0.1) !important;
+    color: #d63638 !important;
+}
+
+.datepicker__tooltip {
+    background: var(--background-dark);
+    color: var(--leobo-gold);
+    border: 1px solid var(--leobo-gold);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.datepicker__tooltip::before {
+    border-top-color: var(--leobo-gold);
+}
+
+.datepicker__close-button {
+    background: var(--leobo-gold);
+    color: var(--background-dark);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.datepicker__close-button:hover {
+    background: var(--leobo-gold-hover);
+    transform: translateY(-1px);
+}
+
+.datepicker__clear-button {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    transition: all 0.2s ease;
+}
+
+.datepicker__clear-button:hover {
+    background: var(--background-light);
+    color: var(--text-primary);
+    border-color: var(--leobo-gold);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .datepicker {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .datepicker__months {
+        flex-direction: column;
+    }
+    
+    .datepicker__month {
+        margin-bottom: var(--spacing-md);
+    }
 }

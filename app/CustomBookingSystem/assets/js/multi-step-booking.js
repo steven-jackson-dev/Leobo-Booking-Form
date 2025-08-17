@@ -309,3 +309,4 @@ class LeoboMultiStepBooking {
             year: 'numeric'
         });
     }
+}

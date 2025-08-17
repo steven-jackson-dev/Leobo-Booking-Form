@@ -304,13 +304,21 @@ class LeoboBookingAvailability {
         $end_time = microtime(true);
         $response_time = round(($end_time - $start_time) * 1000, 2);
         
-        return array(
+        $result = array(
             'status' => $data !== false ? 'success' : 'failed',
             'response_time_ms' => $response_time,
             'data_received' => $data !== false,
             'has_availability_data' => $data && isset($data['availability_data']),
-            'timestamp' => current_time('mysql')
+            'timestamp' => current_time('mysql'),
+            'response_data' => $data // Include the actual response data
         );
+        
+        // If the API call failed, include error information
+        if ($data === false) {
+            $result['error_message'] = 'Failed to connect to Pan Hospitality API';
+        }
+        
+        return $result;
     }
     
     /**
