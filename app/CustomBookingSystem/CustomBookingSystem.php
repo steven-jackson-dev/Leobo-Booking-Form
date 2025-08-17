@@ -103,7 +103,7 @@ class LeoboCustomBookingSystem {
             'leobo-booking-form',
             $this->plugin_url . '/assets/js/booking-form.js',
             array('jquery'),
-            '3.2.0', // Updated for pricing fixes and debugging
+            '3.3.0', // Updated for seasonal calendar and removed blocked dates
             true
         );
         
@@ -112,7 +112,7 @@ class LeoboCustomBookingSystem {
             'leobo-booking-form-styles',
             $this->plugin_url . '/assets/css/booking-form-styles.css',
             array(),
-            '3.2.1' // Updated to force cache refresh for checkbox fixes
+            '3.3.2' // Updated to remove min-height from booking-content-wrapper
         );
         
         // Localize script
@@ -126,7 +126,8 @@ class LeoboCustomBookingSystem {
                 'packages' => $frontend_data['packages'] ?? array(),
                 'seasons' => $frontend_data['seasons'] ?? array(),
                 'guest_rules' => $frontend_data['guest_rules'] ?? array(),
-                'blocked_dates' => $this->get_blocked_dates_js_format(),
+                'blocked_dates' => array(), // Removed blocked dates as requested
+                'season_dates' => $this->get_season_dates_for_calendar(),
                 'acf_config' => array(
                     'adults_max' => get_field('max_adults', 'option') ?: 12,
                     'children_max' => get_field('max_children', 'option') ?: 8,
@@ -337,6 +338,92 @@ class LeoboCustomBookingSystem {
     private function get_blocked_dates_js_format() {
         global $wpdb, $leobo_booking_availability;
         return $leobo_booking_availability->get_blocked_dates(12, 'Y-m-d');
+    }
+    
+    /**
+     * Get season dates for calendar color coding
+     */
+    private function get_season_dates_for_calendar() {
+        $seasons_data = array(
+            'standard' => array(),
+            'peak' => array(),
+            'christmas' => array()
+        );
+        
+        // Get Standard Season dates
+        $standard_dates = get_field('standard_season_dates', 'option');
+        if (!empty($standard_dates)) {
+            foreach ($standard_dates as $date_range) {
+                if (!empty($date_range['standard_start']) && !empty($date_range['standard_end'])) {
+                    $seasons_data['standard'][] = array(
+                        'start' => $this->convert_date_format($date_range['standard_start']),
+                        'end' => $this->convert_date_format($date_range['standard_end'])
+                    );
+                }
+            }
+        }
+        
+        // Get Peak Season dates
+        $peak_dates = get_field('peak_season_dates', 'option');
+        if (!empty($peak_dates)) {
+            foreach ($peak_dates as $date_range) {
+                if (!empty($date_range['peak_start']) && !empty($date_range['peak_end'])) {
+                    $seasons_data['peak'][] = array(
+                        'start' => $this->convert_date_format($date_range['peak_start']),
+                        'end' => $this->convert_date_format($date_range['peak_end'])
+                    );
+                }
+            }
+        }
+        
+        // Get Christmas Season dates
+        $christmas_dates = get_field('christmas_dates', 'option');
+        if (!empty($christmas_dates)) {
+            foreach ($christmas_dates as $date_range) {
+                if (!empty($date_range['christmas_start']) && !empty($date_range['christmas_end'])) {
+                    $seasons_data['christmas'][] = array(
+                        'start' => $this->convert_date_format($date_range['christmas_start']),
+                        'end' => $this->convert_date_format($date_range['christmas_end'])
+                    );
+                }
+            }
+        }
+        
+        return $seasons_data;
+    }
+    
+    /**
+     * Convert date format from DD/MM/YYYY to YYYY-MM-DD
+     */
+    private function convert_date_format($date_string) {
+        if (empty($date_string)) {
+            return '';
+        }
+        
+        // Try to parse the date in DD/MM/YYYY format
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $date_string, $matches)) {
+            $day = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+            $month = str_pad($matches[2], 2, '0', STR_PAD_LEFT);
+            $year = $matches[3];
+            return "{$year}-{$month}-{$day}";
+        }
+        
+        // If already in YYYY-MM-DD format, return as is
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_string)) {
+            return $date_string;
+        }
+        
+        // Try to parse with DateTime as fallback
+        try {
+            $date = DateTime::createFromFormat('d/m/Y', $date_string);
+            if ($date) {
+                return $date->format('Y-m-d');
+            }
+        } catch (Exception $e) {
+            error_log('Date conversion error: ' . $e->getMessage());
+        }
+        
+        return '';
     }
     
     /**

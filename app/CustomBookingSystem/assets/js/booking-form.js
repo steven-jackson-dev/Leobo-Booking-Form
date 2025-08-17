@@ -189,9 +189,9 @@ class LeoboBookingForm {
             isSelectingRange: false
         };
         
-        // Get blocked dates from configuration
-        const blockedDates = this.config.blocked_dates || [];
-        console.log('Blocked dates loaded:', blockedDates);
+        // Get season dates from configuration
+        const seasonDates = this.config.season_dates || {};
+        console.log('Season dates loaded:', seasonDates);
         
         // Initialize custom date picker
         this.initializeCustomDatePicker();
@@ -317,7 +317,7 @@ class LeoboBookingForm {
         
         // Generate calendar days
         const today = new Date();
-        const blockedDates = this.config.blocked_dates || [];
+        const seasonDates = this.config.season_dates || {};
         
         for (let i = 0; i < 42; i++) { // 6 weeks
             const date = new Date(startDate);
@@ -332,10 +332,14 @@ class LeoboBookingForm {
                 dayElement.classList.add('other-month');
             } else if (date < today) {
                 dayElement.classList.add('past');
-            } else if (this.isDateBlocked(this.formatDate(date), blockedDates)) {
-                dayElement.classList.add('blocked');
             } else {
                 dayElement.classList.add('available');
+                
+                // Add seasonal color coding
+                const season = this.getDateSeason(this.formatDate(date), seasonDates);
+                if (season) {
+                    dayElement.classList.add(`season-${season}`);
+                }
             }
             
             // Add selection classes
@@ -355,6 +359,9 @@ class LeoboBookingForm {
             
             calendarDays.appendChild(dayElement);
         }
+        
+        // Render the season legend if it doesn't exist
+        this.renderSeasonLegend();
     }
     
     selectDate(date) {
@@ -414,25 +421,15 @@ class LeoboBookingForm {
     
     applyDates() {
         if (this.calendar.selectedStartDate && this.calendar.selectedEndDate) {
-            // Check if range contains blocked dates
-            const blockedDates = this.config.blocked_dates || [];
-            const startDate = this.formatDate(this.calendar.selectedStartDate);
-            const endDate = this.formatDate(this.calendar.selectedEndDate);
-            
-            if (this.hasBlockedDatesInRange(startDate, endDate, blockedDates)) {
-                alert('Your selected date range contains unavailable dates. Please choose different dates.');
-                return;
-            }
-            
             // Update form data
-            this.formData.dates.checkin = startDate;
-            this.formData.dates.checkout = endDate;
+            this.formData.dates.checkin = this.formatDate(this.calendar.selectedStartDate);
+            this.formData.dates.checkout = this.formatDate(this.calendar.selectedEndDate);
             
             // Update hidden inputs
             const arrivalInput = document.getElementById('arrival-date');
             const departureInput = document.getElementById('departure-date');
-            if (arrivalInput) arrivalInput.value = startDate;
-            if (departureInput) departureInput.value = endDate;
+            if (arrivalInput) arrivalInput.value = this.formData.dates.checkin;
+            if (departureInput) departureInput.value = this.formData.dates.checkout;
             
             this.closeCalendar();
             this.updateSidebarSummary();
@@ -757,29 +754,84 @@ class LeoboBookingForm {
                date1.getDate() === date2.getDate();
     }
     
-    isDateBlocked(dateString, blockedDates) {
-        if (!dateString || !blockedDates || blockedDates.length === 0) return false;
-        return blockedDates.includes(dateString);
-    }
-    
-    hasBlockedDatesInRange(startDate, endDate, blockedDates) {
-        if (!startDate || !endDate || !blockedDates || blockedDates.length === 0) return false;
+    getDateSeason(dateString, seasonDates) {
+        if (!dateString || !seasonDates) return null;
         
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const current = new Date(start);
-        
-        // Check each date in the range (excluding end date)
-        while (current < end) {
-            const dateString = this.formatDate(current);
-            if (this.isDateBlocked(dateString, blockedDates)) {
-                return true;
+        // Check Christmas season first (highest priority)
+        if (seasonDates.christmas && seasonDates.christmas.length > 0) {
+            for (const range of seasonDates.christmas) {
+                if (this.isDateInRange(dateString, range.start, range.end)) {
+                    return 'christmas';
+                }
             }
-            current.setDate(current.getDate() + 1);
         }
         
-        return false;
+        // Check Peak season
+        if (seasonDates.peak && seasonDates.peak.length > 0) {
+            for (const range of seasonDates.peak) {
+                if (this.isDateInRange(dateString, range.start, range.end)) {
+                    return 'peak';
+                }
+            }
+        }
+        
+        // Check Standard season
+        if (seasonDates.standard && seasonDates.standard.length > 0) {
+            for (const range of seasonDates.standard) {
+                if (this.isDateInRange(dateString, range.start, range.end)) {
+                    return 'standard';
+                }
+            }
+        }
+        
+        return 'standard'; // Default to standard if no match
     }
+    
+    isDateInRange(dateString, startDate, endDate) {
+        if (!dateString || !startDate || !endDate) return false;
+        
+        const date = new Date(dateString);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        return date >= start && date <= end;
+    }
+    
+    renderSeasonLegend() {
+        // Check if legend already exists
+        let legend = document.getElementById('season-legend');
+        if (legend) return;
+        
+        // Find the calendar widget to add legend after
+        const calendarWidget = document.getElementById('calendar-widget');
+        if (!calendarWidget) return;
+        
+        // Create legend element
+        legend = document.createElement('div');
+        legend.id = 'season-legend';
+        legend.className = 'season-legend';
+        legend.innerHTML = `
+            <div class="legend-title">Season Pricing</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-color season-standard"></div>
+                    <span>Standard Season</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color season-peak"></div>
+                    <span>Peak Season</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color season-christmas"></div>
+                    <span>Christmas Season</span>
+                </div>
+            </div>
+        `;
+        
+        // Insert after calendar widget
+        calendarWidget.parentNode.insertBefore(legend, calendarWidget.nextSibling);
+    }
+
     
     // Extras Selection Methods
     updateTransferSelection(value, checked) {

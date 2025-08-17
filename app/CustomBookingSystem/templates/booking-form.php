@@ -106,7 +106,7 @@ $atts = $args['attributes'] ?? array();
                                 </div>
                                 
                                 <div class="date-availability-notice">
-                                    <small>❌ Blocked dates are shown in red and cannot be selected. Available dates are shown in green.</small>
+                                    <small>📅 Different colors indicate seasonal pricing: <span style="color: #4caf50;">Green (Standard)</span>, <span style="color: #ff8f00;">Orange (Peak)</span>, <span style="color: #dc267f;">Pink (Christmas)</span>. Legend shows below calendar.</small>
                                 </div>
                                 
                                 <div class="date-flexible-option">
@@ -123,57 +123,60 @@ $atts = $args['attributes'] ?? array();
                             </div>
                         </div>
 
-                        <!-- Guest Section -->
-                        <div class="form-section guests-section">
-                            
-                            <!-- Adults -->
-                            <div class="guest-type-row">
-                                <label class="guest-label">Adults</label>
-                                <div class="guest-counter">
-                                    <button type="button" class="counter-btn minus" data-target="adults">-</button>
-                                    <span class="counter-value" id="adults-count">1</span>
-                                    <button type="button" class="counter-btn plus" data-target="adults">+</button>
+                        <!-- Guests and What's Included Grid -->
+                        <div class="guests-included-grid">
+                            <!-- Guest Section -->
+                            <div class="form-section guests-section">
+                                
+                                <!-- Adults -->
+                                <div class="guest-type-row">
+                                    <label class="guest-label">Adults</label>
+                                    <div class="guest-counter">
+                                        <button type="button" class="counter-btn minus" data-target="adults">-</button>
+                                        <span class="counter-value" id="adults-count">1</span>
+                                        <button type="button" class="counter-btn plus" data-target="adults">+</button>
+                                    </div>
                                 </div>
+
+                                <!-- Children -->
+                                <div class="guest-type-row">
+                                    <label class="guest-label">Children (4+ years)</label>
+                                    <div class="guest-counter">
+                                        <button type="button" class="counter-btn minus" data-target="children">-</button>
+                                        <span class="counter-value" id="children-count">0</span>
+                                        <button type="button" class="counter-btn plus" data-target="children">+</button>
+                                    </div>
+                                </div>
+
+                                <!-- Babies -->
+                                <div class="guest-type-row">
+                                    <label class="guest-label">Baby (0-3 years)</label>
+                                    <div class="guest-counter">
+                                        <button type="button" class="counter-btn minus" data-target="babies">-</button>
+                                        <span class="counter-value" id="babies-count">0</span>
+                                        <button type="button" class="counter-btn plus" data-target="babies">+</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden inputs -->
+                                <input type="hidden" id="adults" name="adults" value="1" />
+                                <input type="hidden" id="children" name="children" value="0" />
+                                <input type="hidden" id="babies" name="babies" value="0" />
                             </div>
 
-                            <!-- Children -->
-                            <div class="guest-type-row">
-                                <label class="guest-label">Children (4+ years)</label>
-                                <div class="guest-counter">
-                                    <button type="button" class="counter-btn minus" data-target="children">-</button>
-                                    <span class="counter-value" id="children-count">0</span>
-                                    <button type="button" class="counter-btn plus" data-target="children">+</button>
-                                </div>
+                            <!-- What's Included Section -->
+                            <div class="form-section included-section">
+                                <h3 class="section-title">What's included in the price?</h3>
+                                <ul class="included-list">
+                                    <li>Unlimited quad bikes, buggies, and game vehicles</li>
+                                    <li>Stargazing with a research-grade telescope</li>
+                                    <li>River kayaking + natural freshwater swimming</li>
+                                    <li>Private chef + all meals</li>
+                                    <li>Housekeeping + full staff</li>
+                                    <li>Full access to the 20,000-acre reserve</li>
+                                    <li>Exclusive use of The Observatory Villa</li>
+                                </ul>
                             </div>
-
-                            <!-- Babies -->
-                            <div class="guest-type-row">
-                                <label class="guest-label">Baby (0-3 years)</label>
-                                <div class="guest-counter">
-                                    <button type="button" class="counter-btn minus" data-target="babies">-</button>
-                                    <span class="counter-value" id="babies-count">0</span>
-                                    <button type="button" class="counter-btn plus" data-target="babies">+</button>
-                                </div>
-                            </div>
-                            
-                            <!-- Hidden inputs -->
-                            <input type="hidden" id="adults" name="adults" value="1" />
-                            <input type="hidden" id="children" name="children" value="0" />
-                            <input type="hidden" id="babies" name="babies" value="0" />
-                        </div>
-
-                        <!-- What's Included Section -->
-                        <div class="form-section included-section">
-                            <h3 class="section-title">What's included in the price?</h3>
-                            <ul class="included-list">
-                                <li>Unlimited quad bikes, buggies, and game vehicles</li>
-                                <li>Stargazing with a research-grade telescope</li>
-                                <li>River kayaking + natural freshwater swimming</li>
-                                <li>Private chef + all meals</li>
-                                <li>Housekeeping + full staff</li>
-                                <li>Full access to the 20,000-acre reserve</li>
-                                <li>Exclusive use of The Observatory Villa</li>
-                            </ul>
                         </div>
 
                         <!-- Step Navigation -->

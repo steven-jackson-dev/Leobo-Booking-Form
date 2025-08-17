@@ -122,7 +122,6 @@
     display: flex;
     max-width: var(--container-max-width);
     margin: 0 auto;
-    min-height: calc(100vh - 80px);
 }
 
 .booking-main-content {
@@ -172,6 +171,33 @@
 
 .form-section {
     margin-bottom: var(--spacing-xl);
+}
+
+/* Guests and Included Grid Layout */
+.guests-included-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+.guests-included-grid .form-section {
+    margin-bottom: 0; /* Remove bottom margin since grid handles spacing */
+}
+
+/* Ensure both sections have equal height and visual balance */
+.guests-included-grid .guests-section {
+    background: rgba(255, 255, 255, 0.02);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.guests-included-grid .included-section {
+    background: rgba(255, 255, 255, 0.02);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
 }
 
 .section-title {
@@ -386,33 +412,48 @@
 
 .calendar-day.available {
     color: var(--text-primary);
-    background: rgba(40, 167, 69, 0.1);
-    border: 1px solid rgba(40, 167, 69, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .calendar-day.available:hover {
-    background: rgba(40, 167, 69, 0.2);
-    border-color: rgba(40, 167, 69, 0.5);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
     transform: scale(1.05);
 }
 
-.calendar-day.blocked {
-    color: #dc3545;
-    background: rgba(220, 53, 69, 0.1);
-    border: 1px solid rgba(220, 53, 69, 0.3);
-    cursor: not-allowed;
-    position: relative;
+/* Season-specific styling for calendar days */
+.calendar-day.season-standard {
+    background: rgba(76, 175, 80, 0.15) !important;
+    border-color: rgba(76, 175, 80, 0.4) !important;
+    color: #4caf50 !important;
 }
 
-.calendar-day.blocked::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 10%;
-    right: 10%;
-    height: 2px;
-    background: #dc3545;
-    transform: translateY(-50%);
+.calendar-day.season-standard:hover {
+    background: rgba(76, 175, 80, 0.25) !important;
+    border-color: rgba(76, 175, 80, 0.6) !important;
+}
+
+.calendar-day.season-peak {
+    background: rgba(255, 193, 7, 0.15) !important;
+    border-color: rgba(255, 193, 7, 0.4) !important;
+    color: #ff8f00 !important;
+}
+
+.calendar-day.season-peak:hover {
+    background: rgba(255, 193, 7, 0.25) !important;
+    border-color: rgba(255, 193, 7, 0.6) !important;
+}
+
+.calendar-day.season-christmas {
+    background: rgba(220, 38, 127, 0.15) !important;
+    border-color: rgba(220, 38, 127, 0.4) !important;
+    color: #dc267f !important;
+}
+
+.calendar-day.season-christmas:hover {
+    background: rgba(220, 38, 127, 0.25) !important;
+    border-color: rgba(220, 38, 127, 0.6) !important;
 }
 
 .calendar-day.selected {
@@ -447,6 +488,77 @@
     flex: 1;
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: var(--font-size-sm);
+}
+
+/* ====================
+   SEASON LEGEND
+   ==================== */
+
+.season-legend {
+    background: var(--background-medium);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.legend-title {
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-sm);
+    text-align: center;
+}
+
+.legend-items {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.legend-color.season-standard {
+    background: rgba(76, 175, 80, 0.6);
+    border-color: #4caf50;
+}
+
+.legend-color.season-peak {
+    background: rgba(255, 193, 7, 0.6);
+    border-color: #ff8f00;
+}
+
+.legend-color.season-christmas {
+    background: rgba(220, 38, 127, 0.6);
+    border-color: #dc267f;
+}
+
+/* Mobile adjustments for legend */
+@media (max-width: 768px) {
+    .legend-items {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .legend-item {
+        justify-content: center;
+    }
 }
 
 .date-info {
@@ -1326,6 +1438,12 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     
     .btn {
         width: 100%;
+    }
+    
+    /* Stack guests and included sections on mobile */
+    .guests-included-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
     }
 }
 
