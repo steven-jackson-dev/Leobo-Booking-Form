@@ -55,12 +55,24 @@ $atts = $args['attributes'] ?? array();
                             <h3 class="section-title">Dates</h3>
                             
                             <div class="date-input-wrapper">
-                                <div class="date-selector-button" id="date-selector">
-                                    <span class="calendar-icon">📅</span>
-                                    <span class="date-text">Select dates</span>
-                                    <div class="date-subtext" id="date-range-info" style="display: none;">
-                                        You have selected <span id="date-range-text"></span>
+                                <div class="date-inputs-row">
+                                    <div class="date-input-group">
+                                        <label for="arrival-date" class="date-label">Arrival Date</label>
+                                        <input type="date" id="arrival-date" name="checkin_date" class="date-input" required />
                                     </div>
+                                    
+                                    <div class="date-input-group">
+                                        <label for="departure-date" class="date-label">Departure Date</label>
+                                        <input type="date" id="departure-date" name="checkout_date" class="date-input" required />
+                                    </div>
+                                </div>
+                                
+                                <div class="date-info" id="date-range-info" style="display: none;">
+                                    <span id="date-range-text"></span>
+                                </div>
+                                
+                                <div class="date-availability-notice">
+                                    <small>Some dates may be unavailable due to existing bookings. You will be notified if your selected dates are not available.</small>
                                 </div>
                                 
                                 <div class="date-flexible-option">
@@ -71,10 +83,6 @@ $atts = $args['attributes'] ?? array();
                                     </label>
                                 </div>
                             </div>
-                            
-                            <!-- Hidden date inputs -->
-                            <input type="hidden" id="checkin-date" name="checkin_date" />
-                            <input type="hidden" id="checkout-date" name="checkout_date" />
                         </div>
 
                         <!-- Guest Section -->
@@ -399,13 +407,13 @@ $atts = $args['attributes'] ?? array();
                     <h4 class="summary-title">GUESTS</h4>
                     <div class="guest-summary">
                         <div class="guest-item">
-                            <span class="guest-count" id="sidebar-adults">3</span> adults
+                            <span class="guest-count" id="sidebar-adults">-</span> adults
                         </div>
                         <div class="guest-item">
-                            <span class="guest-count" id="sidebar-children">4</span> children (4+)
+                            <span class="guest-count" id="sidebar-children">-</span> children (4+)
                         </div>
                         <div class="guest-item">
-                            <span class="guest-count" id="sidebar-babies">2</span> babies (0-3)
+                            <span class="guest-count" id="sidebar-babies">-</span> babies (0-3)
                         </div>
                     </div>
                 </div>
@@ -414,11 +422,7 @@ $atts = $args['attributes'] ?? array();
                 <div class="summary-section">
                     <h4 class="summary-title">DATES</h4>
                     <div class="dates-summary" id="dates-summary">
-                        <div class="date-range">12th Jan - 5th Feb</div>
-                        <div class="nights-count">(16 nights)</div>
-                        <div class="season-info" id="season-info" style="display: none;">
-                            <span class="season-label" id="season-display"></span>
-                        </div>
+                        <div class="date-placeholder">Select your dates</div>
                     </div>
                 </div>
 

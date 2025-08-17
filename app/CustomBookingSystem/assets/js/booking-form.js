@@ -18,7 +18,7 @@ class LeoboBookingForm {
         
         this.formData = {
             guests: {
-                adults: 1, // Default to 1 (minimum required)
+                adults: 0, // No default value - user must select
                 children: 0, // Default to 0 (optional)
                 babies: 0 // Default to 0 (optional)
             },
@@ -173,10 +173,113 @@ class LeoboBookingForm {
     }
     
     setupDateSelection() {
-        const dateSelector = document.getElementById('date-selector');
-        if (dateSelector) {
-            dateSelector.addEventListener('click', () => {
-                this.showDatePicker();
+        const arrivalInput = document.getElementById('arrival-date');
+        const departureInput = document.getElementById('departure-date');
+        
+        // Get blocked dates from configuration
+        const blockedDates = this.config.blocked_dates || [];
+        console.log('Blocked dates loaded:', blockedDates);
+        
+        // Add blocked dates information for better user feedback
+        this.setupDateAvailabilityFeedback(blockedDates);
+        
+        if (arrivalInput) {
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            arrivalInput.min = today;
+            
+            // Add blocked dates information as data attribute for reference
+            if (blockedDates && blockedDates.length > 0) {
+                arrivalInput.setAttribute('data-blocked-dates', JSON.stringify(blockedDates));
+                // Update the list of allowed dates using a more advanced method
+                this.setupDateInputConstraints(arrivalInput, blockedDates);
+            }
+            
+            arrivalInput.addEventListener('change', (e) => {
+                const selectedDate = e.target.value;
+                
+                // Clear any previous warnings
+                this.clearDateWarnings('arrival');
+                
+                // Check if selected date is blocked
+                if (this.isDateBlocked(selectedDate, blockedDates)) {
+                    this.showDateWarning('arrival', 'This arrival date is not available. Please select a different date.');
+                    e.target.value = '';
+                    this.formData.dates.checkin = '';
+                    return;
+                }
+                
+                // Check if date range contains blocked dates
+                if (departureInput.value && this.hasBlockedDatesInRange(selectedDate, departureInput.value, blockedDates)) {
+                    this.showDateWarning('arrival', 'Your selected date range contains unavailable dates. Please choose different dates.');
+                    e.target.value = '';
+                    this.formData.dates.checkin = '';
+                    return;
+                }
+                
+                const arrivalDate = new Date(selectedDate);
+                this.formData.dates.checkin = selectedDate;
+                
+                // Show success feedback
+                this.showDateSuccess('arrival', 'Arrival date selected');
+                
+                // Update departure minimum date
+                if (departureInput) {
+                    const minDeparture = new Date(arrivalDate);
+                    minDeparture.setDate(minDeparture.getDate() + 1);
+                    departureInput.min = minDeparture.toISOString().split('T')[0];
+                    
+                    // If departure is before arrival, clear it
+                    if (departureInput.value && new Date(departureInput.value) <= arrivalDate) {
+                        departureInput.value = '';
+                        this.formData.dates.checkout = '';
+                        this.clearDateWarnings('departure');
+                    }
+                }
+                
+                this.updateDateDisplay();
+                this.updateSidebarSummary();
+                this.updatePricing();
+            });
+        }
+        
+        if (departureInput) {
+            // Add blocked dates information as data attribute for reference
+            if (blockedDates && blockedDates.length > 0) {
+                departureInput.setAttribute('data-blocked-dates', JSON.stringify(blockedDates));
+                this.setupDateInputConstraints(departureInput, blockedDates);
+            }
+            
+            departureInput.addEventListener('change', (e) => {
+                const selectedDate = e.target.value;
+                
+                // Clear any previous warnings
+                this.clearDateWarnings('departure');
+                
+                // Check if departure date is blocked
+                if (this.isDateBlocked(selectedDate, blockedDates)) {
+                    this.showDateWarning('departure', 'This departure date is not available. Please select a different date.');
+                    e.target.value = '';
+                    this.formData.dates.checkout = '';
+                    return;
+                }
+                
+                // Check if date range contains blocked dates
+                if (arrivalInput.value && this.hasBlockedDatesInRange(arrivalInput.value, selectedDate, blockedDates)) {
+                    this.showDateWarning('departure', 'Your selected date range contains unavailable dates. Please choose different dates.');
+                    e.target.value = '';
+                    this.formData.dates.checkout = '';
+                    return;
+                }
+                
+                this.formData.dates.checkout = selectedDate;
+                
+                // Show success feedback
+                this.showDateSuccess('departure', 'Departure date selected');
+                
+                this.updateDateDisplay();
+                this.updateSidebarSummary();
+                this.updatePricing();
             });
         }
         
@@ -186,6 +289,189 @@ class LeoboBookingForm {
             flexibleDates.addEventListener('change', (e) => {
                 this.formData.dates.flexible = e.target.checked;
             });
+        }
+    }
+    
+    setupDateInputConstraints(input, blockedDates) {
+        // Add a more sophisticated approach by intercepting keydown and input events
+        // This provides additional protection against blocked date selection
+        
+        input.addEventListener('input', (e) => {
+            const selectedDate = e.target.value;
+            if (selectedDate && this.isDateBlocked(selectedDate, blockedDates)) {
+                // Provide immediate feedback for blocked dates
+                e.target.classList.add('invalid');
+                this.showBlockedDateTooltip(e.target, selectedDate);
+            } else {
+                e.target.classList.remove('invalid');
+                this.hideBlockedDateTooltip(e.target);
+            }
+        });
+    }
+    
+    showBlockedDateTooltip(input, blockedDate) {
+        // Remove existing tooltip
+        this.hideBlockedDateTooltip(input);
+        
+        const tooltip = document.createElement('div');
+        tooltip.className = 'blocked-date-tooltip';
+        tooltip.textContent = `${this.formatDisplayDate(new Date(blockedDate))} is not available`;
+        
+        input.parentNode.style.position = 'relative';
+        input.parentNode.appendChild(tooltip);
+    }
+    
+    hideBlockedDateTooltip(input) {
+        const tooltip = input.parentNode.querySelector('.blocked-date-tooltip');
+        if (tooltip) {
+            tooltip.remove();
+        }
+    }
+    
+    // Date Validation Helper Methods
+    isDateBlocked(dateString, blockedDates) {
+        if (!blockedDates || !Array.isArray(blockedDates)) {
+            return false;
+        }
+        
+        // Convert date to consistent format for comparison
+        const date = new Date(dateString);
+        const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        return blockedDates.includes(formattedDate);
+    }
+    
+    hasBlockedDatesInRange(startDate, endDate, blockedDates) {
+        if (!blockedDates || !Array.isArray(blockedDates) || !startDate || !endDate) {
+            return false;
+        }
+        
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const currentDate = new Date(start);
+        
+        // Check each date in the range (excluding departure date)
+        while (currentDate < end) {
+            const dateString = currentDate.toISOString().split('T')[0];
+            if (this.isDateBlocked(dateString, blockedDates)) {
+                return true;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        return false;
+    }
+    
+    // Date Availability Feedback
+    setupDateAvailabilityFeedback(blockedDates) {
+        const arrivalInput = document.getElementById('arrival-date');
+        const departureInput = document.getElementById('departure-date');
+        
+        if (arrivalInput) {
+            arrivalInput.addEventListener('focus', () => {
+                this.showDateAvailabilityInfo(blockedDates);
+            });
+        }
+        
+        if (departureInput) {
+            departureInput.addEventListener('focus', () => {
+                this.showDateAvailabilityInfo(blockedDates);
+            });
+        }
+    }
+    
+    showDateAvailabilityInfo(blockedDates) {
+        if (!blockedDates || blockedDates.length === 0) return;
+        
+        // Show a temporary message about blocked dates
+        const existingInfo = document.querySelector('.temp-availability-info');
+        if (existingInfo) {
+            existingInfo.remove();
+        }
+        
+        // Get next few blocked dates for display
+        const today = new Date();
+        const upcomingBlocked = blockedDates
+            .filter(dateStr => new Date(dateStr) >= today)
+            .slice(0, 5)
+            .map(dateStr => this.formatDisplayDate(new Date(dateStr)))
+            .join(', ');
+        
+        if (upcomingBlocked) {
+            const infoElement = document.createElement('div');
+            infoElement.className = 'temp-availability-info';
+            infoElement.innerHTML = `
+                <small><strong>Unavailable dates:</strong> ${upcomingBlocked}${blockedDates.length > 5 ? '...' : ''}</small>
+            `;
+            
+            const dateSection = document.querySelector('.dates-section');
+            if (dateSection) {
+                dateSection.appendChild(infoElement);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (infoElement && infoElement.parentNode) {
+                        infoElement.remove();
+                    }
+                }, 5000);
+            }
+        }
+    }
+    
+    // Date Feedback Methods
+    showDateWarning(inputType, message) {
+        const input = document.getElementById(inputType === 'arrival' ? 'arrival-date' : 'departure-date');
+        if (input) {
+            input.classList.add('invalid');
+            
+            // Create or update warning element
+            let warningElement = input.parentNode.querySelector('.date-warning');
+            if (!warningElement) {
+                warningElement = document.createElement('div');
+                warningElement.className = 'date-warning';
+                input.parentNode.appendChild(warningElement);
+            }
+            
+            warningElement.textContent = message;
+            warningElement.classList.add('show');
+        }
+    }
+    
+    clearDateWarnings(inputType) {
+        const input = document.getElementById(inputType === 'arrival' ? 'arrival-date' : 'departure-date');
+        if (input) {
+            input.classList.remove('invalid');
+            
+            const warningElement = input.parentNode.querySelector('.date-warning');
+            if (warningElement) {
+                warningElement.classList.remove('show');
+            }
+            
+            const successElement = input.parentNode.querySelector('.date-availability-info');
+            if (successElement) {
+                successElement.classList.remove('show');
+            }
+        }
+    }
+    
+    showDateSuccess(inputType, message) {
+        const input = document.getElementById(inputType === 'arrival' ? 'arrival-date' : 'departure-date');
+        if (input) {
+            // Create or update success element
+            let successElement = input.parentNode.querySelector('.date-availability-info');
+            if (!successElement) {
+                successElement = document.createElement('div');
+                successElement.className = 'date-availability-info';
+                input.parentNode.appendChild(successElement);
+            }
+            
+            successElement.textContent = message;
+            successElement.classList.add('show');
+            
+            // Auto-hide success message after 3 seconds
+            setTimeout(() => {
+                successElement.classList.remove('show');
+            }, 3000);
         }
     }
     
@@ -364,127 +650,14 @@ class LeoboBookingForm {
         }
     }
     
-    // Date Selection Methods
-    showDatePicker() {
-        const modal = document.getElementById('date-picker-modal');
-        if (modal) {
-            modal.style.display = 'flex';
-            this.initializeHotelDatepicker();
-        }
-    }
-    
-    hideDatePicker() {
-        const modal = document.getElementById('date-picker-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
-    
-    initializeHotelDatepicker() {
-        console.log('Initializing Hotel Datepicker...');
-        console.log('Available globals:', {
-            HotelDatepicker: typeof window.HotelDatepicker,
-            hotelDatepicker: typeof window.hotelDatepicker,
-            fecha: typeof window.fecha,
-            windowKeys: Object.keys(window).filter(k => k.toLowerCase().includes('hotel'))
-        });
-        
-        const dateInput = document.getElementById('date_range_input');
-        if (!dateInput || dateInput._hotelDatepicker) return;
-        
-        // Get blocked dates from server
-        const blockedDates = window.leobo_booking_system?.blocked_dates || [];
-        
-        // Convert blocked dates to Date objects for Hotel Datepicker
-        const disabledDates = blockedDates.map(dateStr => new Date(dateStr));
-        
-        // Check if Hotel Datepicker is available
-        if (typeof window.HotelDatepicker === 'undefined' && typeof window.hotelDatepicker === 'undefined') {
-            console.error('Hotel Datepicker library not loaded, using fallback');
-            // Use fallback to basic date inputs
-            this.setupBasicDateInputs(dateInput);
-            return;
-        }
-        
-        try {
-            // Initialize Hotel Datepicker (try both possible constructors)
-            const DatepickerConstructor = window.HotelDatepicker || window.hotelDatepicker;
-            this.hotelDatepicker = new DatepickerConstructor(dateInput, {
-            format: 'YYYY-MM-DD',
-            separator: ' - ',
-            startOfWeek: 'monday',
-            startDate: new Date(),
-            endDate: false,
-            minNights: this.config.acf_config?.minimum_nights_standard || 3,
-            maxNights: 0,
-            selectForward: false,
-            disabledDates: disabledDates,
-            enableCheckout: false,
-            autoClose: false,
-            showTopbar: true,
-            topbarPosition: 'top',
-            moveBothMonths: true,
-            inline: false,
-            clearButton: true,
-            submitButton: false,
-            animationSpeed: '0.3s',
-            hoveringTooltip: function(nights, startTime, hoverTime) {
-                return nights + (nights === 1 ? ' night' : ' nights');
-            },
-            i18n: {
-                selected: 'Your stay:',
-                night: 'Night',
-                nights: 'Nights',
-                button: 'Close',
-                clearButton: 'Clear',
-                'checkin-disabled': 'Check-in disabled',
-                'checkout-disabled': 'Check-out disabled',
-                'info-more': 'Please select a date range of at least ' + (this.config.acf_config?.minimum_nights_standard || 3) + ' nights',
-                'info-default': 'Please select check-in and check-out dates',
-                'aria-application': 'Calendar',
-                'aria-close-button': 'Close the datepicker',
-                'aria-clear-button': 'Clear the selected dates'
-            },
-            onSelectRange: (startDate, endDate) => {
-                this.selectDateRange(startDate, endDate);
-            },
-            onOpenDatepicker: () => {
-                // Optional: Add any open event handling
-            }
-        });
-        
-        // Mark as initialized
-        dateInput._hotelDatepicker = this.hotelDatepicker;
-        console.log('Hotel Datepicker initialized successfully');
-        
-        } catch (error) {
-            console.error('Failed to initialize Hotel Datepicker:', error);
-            this.setupBasicDateInputs(dateInput);
-        }
-    }
-    
-    setupBasicDateInputs(dateInput) {
-        console.log('Setting up basic date inputs fallback');
-        // Simple fallback - convert to two separate date inputs
-        dateInput.type = 'date';
-        dateInput.placeholder = 'Select check-in date';
-        
-        // Add change handler for basic functionality
-        dateInput.addEventListener('change', (e) => {
-            const selectedDate = new Date(e.target.value);
-            if (selectedDate) {
-                // Set a default checkout date (add minimum nights)
-                const minNights = this.config.acf_config?.minimum_nights_standard || 3;
-                const checkoutDate = new Date(selectedDate);
-                checkoutDate.setDate(checkoutDate.getDate() + minNights);
-                
-                this.selectDateRange(selectedDate, checkoutDate);
-            }
-        });
-    }
+    // Date Selection Methods - Now using simple date inputs
     
     selectDateRange(checkin, checkout) {
-        const nights = this.calculateNights(checkin, checkout);
+        // Convert string dates to Date objects if needed
+        const checkinDate = checkin instanceof Date ? checkin : new Date(checkin);
+        const checkoutDate = checkout instanceof Date ? checkout : new Date(checkout);
+        
+        const nights = this.calculateNights(checkinDate, checkoutDate);
         const minNights = this.config.acf_config?.minimum_nights_standard || 3;
         
         // Validate minimum nights
@@ -493,47 +666,44 @@ class LeoboBookingForm {
             return;
         }
         
-        this.formData.dates.checkin = checkin;
-        this.formData.dates.checkout = checkout;
+        this.formData.dates.checkin = checkinDate;
+        this.formData.dates.checkout = checkoutDate;
         
-        // Update hidden inputs
-        const checkinInput = document.getElementById('checkin-date');
-        const checkoutInput = document.getElementById('checkout-date');
+        // Update the date input values
+        const arrivalInput = document.getElementById('arrival-date');
+        const departureInput = document.getElementById('departure-date');
         
-        if (checkinInput) checkinInput.value = this.formatDate(checkin);
-        if (checkoutInput) checkoutInput.value = this.formatDate(checkout);
+        if (arrivalInput) arrivalInput.value = this.formatDate(checkinDate);
+        if (departureInput) departureInput.value = this.formatDate(checkoutDate);
         
         // Update display
-        this.updateDateDisplay(checkin, checkout);
+        this.updateDateDisplay();
         
         // Update sidebar
         this.updateSidebarSummary();
         
         // Calculate pricing
         this.updatePricing();
-        
-        // Hide date picker after a delay
-        setTimeout(() => {
-            this.hideDatePicker();
-        }, 1000);
     }
     
-    updateDateDisplay(checkin, checkout) {
-        const dateText = document.querySelector('.date-text');
-        const dateSubtext = document.getElementById('date-range-info');
+    updateDateDisplay() {
+        const arrivalInput = document.getElementById('arrival-date');
+        const departureInput = document.getElementById('departure-date');
+        const dateInfo = document.getElementById('date-range-info');
         const rangeText = document.getElementById('date-range-text');
         
-        if (dateText && checkin && checkout) {
+        const checkin = arrivalInput ? arrivalInput.value : this.formData.dates.checkin;
+        const checkout = departureInput ? departureInput.value : this.formData.dates.checkout;
+        
+        if (dateInfo && rangeText && checkin && checkout) {
             const checkinFormatted = this.formatDisplayDate(checkin);
             const checkoutFormatted = this.formatDisplayDate(checkout);
             const nights = this.calculateNights(checkin, checkout);
             
-            dateText.textContent = `${checkinFormatted} - ${checkoutFormatted}`;
-            
-            if (dateSubtext && rangeText) {
-                rangeText.textContent = `${checkinFormatted} to ${checkoutFormatted}`;
-                dateSubtext.style.display = 'block';
-            }
+            rangeText.textContent = `${nights} night${nights !== 1 ? 's' : ''}: ${checkinFormatted} to ${checkoutFormatted}`;
+            dateInfo.style.display = 'block';
+        } else if (dateInfo) {
+            dateInfo.style.display = 'none';
         }
     }
     
@@ -610,14 +780,20 @@ class LeoboBookingForm {
     
     // Sidebar Summary Methods
     updateSidebarSummary() {
-        // Update guest counts
+        // Update guest counts with placeholder logic
         const sidebarAdults = document.getElementById('sidebar-adults');
         const sidebarChildren = document.getElementById('sidebar-children');
         const sidebarBabies = document.getElementById('sidebar-babies');
         
-        if (sidebarAdults) sidebarAdults.textContent = this.formData.guests.adults;
-        if (sidebarChildren) sidebarChildren.textContent = this.formData.guests.children;
-        if (sidebarBabies) sidebarBabies.textContent = this.formData.guests.babies;
+        if (sidebarAdults) {
+            sidebarAdults.textContent = this.formData.guests.adults > 0 ? this.formData.guests.adults : '-';
+        }
+        if (sidebarChildren) {
+            sidebarChildren.textContent = this.formData.guests.children > 0 ? this.formData.guests.children : '-';
+        }
+        if (sidebarBabies) {
+            sidebarBabies.textContent = this.formData.guests.babies > 0 ? this.formData.guests.babies : '-';
+        }
         
         // Update dates
         this.updateSidebarDates();
@@ -626,7 +802,10 @@ class LeoboBookingForm {
     updateSidebarDates() {
         const datesDisplay = document.getElementById('dates-summary');
         
-        if (datesDisplay && this.formData.dates.checkin && this.formData.dates.checkout) {
+        if (!datesDisplay) return;
+        
+        // Check if we have both dates selected
+        if (this.formData.dates.checkin && this.formData.dates.checkout) {
             // Ensure dates are Date objects for formatting
             const checkinDate = this.formData.dates.checkin instanceof Date 
                 ? this.formData.dates.checkin
@@ -642,7 +821,7 @@ class LeoboBookingForm {
             
             datesDisplay.innerHTML = `
                 <div class="date-range">${checkinFormatted} - ${checkoutFormatted}</div>
-                <div class="nights-count">(${nights} nights)</div>
+                <div class="nights-count">(${nights} night${nights !== 1 ? 's' : ''})</div>
                 <div class="season-info" id="season-info" style="display: none;">
                     <span class="season-label" id="season-display"></span>
                 </div>
@@ -650,6 +829,22 @@ class LeoboBookingForm {
             
             // Update season information if pricing data is available
             this.updateSeasonDisplay();
+        } else if (this.formData.dates.checkin && !this.formData.dates.checkout) {
+            // Only arrival date selected
+            const checkinDate = this.formData.dates.checkin instanceof Date 
+                ? this.formData.dates.checkin
+                : new Date(this.formData.dates.checkin);
+            const checkinFormatted = this.formatDisplayDate(checkinDate);
+            
+            datesDisplay.innerHTML = `
+                <div class="date-range">${checkinFormatted} - <span class="date-placeholder">Select departure</span></div>
+                <div class="nights-count">(- nights)</div>
+            `;
+        } else {
+            // No dates selected - show placeholder
+            datesDisplay.innerHTML = `
+                <div class="date-placeholder">Select your dates</div>
+            `;
         }
     }
     
@@ -743,8 +938,8 @@ class LeoboBookingForm {
     
     // Pricing Methods
     updatePricing() {
-        // Only calculate if we have dates and guests
-        if (!this.formData.dates.checkin || !this.formData.dates.checkout) {
+        // Only calculate if we have dates and at least 1 adult
+        if (!this.formData.dates.checkin || !this.formData.dates.checkout || this.formData.guests.adults < 1) {
             return;
         }
         

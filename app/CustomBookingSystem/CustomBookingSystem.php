@@ -98,28 +98,12 @@ class LeoboCustomBookingSystem {
         // Dependencies
         wp_enqueue_script('jquery');
         
-        // Hotel Datepicker from unpkg (more reliable)
-        wp_enqueue_script(
-            'hotel-datepicker',
-            'https://unpkg.com/hotel-datepicker@4.12.1/dist/js/hotel-datepicker.min.js',
-            array('jquery'),
-            '4.12.1',
-            true
-        );
-        
-        wp_enqueue_style(
-            'hotel-datepicker-css',
-            'https://unpkg.com/hotel-datepicker@4.12.1/dist/css/hotel-datepicker.min.css',
-            array(),
-            '4.12.1'
-        );
-        
-        // Booking form JavaScript
+        // Booking form JavaScript (now using simple HTML5 date inputs)
         wp_enqueue_script(
             'leobo-booking-form',
             $this->plugin_url . '/assets/js/booking-form.js',
-            array('jquery', 'hotel-datepicker'),
-            filemtime($this->plugin_path . '/assets/js/booking-form.js'),
+            array('jquery'),
+            '2.1.0', // Updated for simple date inputs
             true
         );
         
@@ -127,7 +111,7 @@ class LeoboCustomBookingSystem {
         wp_enqueue_style(
             'leobo-booking-form-styles',
             $this->plugin_url . '/assets/css/booking-form-styles.css',
-            array('hotel-datepicker-css'),
+            array(),
             filemtime($this->plugin_path . '/assets/css/booking-form-styles.css')
         );
         
