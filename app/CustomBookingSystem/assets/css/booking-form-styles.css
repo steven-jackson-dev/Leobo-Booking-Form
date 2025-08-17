@@ -797,6 +797,21 @@
     transition: all 0.3s ease;
 }
 
+/* Hide any orphaned checkmarks that might appear without labels */
+.checkmark:not(.checkbox-label .checkmark):not(.checkbox-option .checkmark):not(.experience-option .checkmark) {
+    display: none !important;
+}
+
+/* Hide any floating checkmarks that might appear due to CSS issues */
+span.checkmark:not([class*="label"] span.checkmark):not([class*="option"] span.checkmark) {
+    visibility: hidden !important;
+}
+
+/* Ensure only proper checkbox structures are visible */
+input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
+    display: none !important;
+}
+
 .radio-mark {
     border-radius: 50%;
 }

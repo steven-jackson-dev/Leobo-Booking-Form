@@ -112,7 +112,7 @@ class LeoboCustomBookingSystem {
             'leobo-booking-form-styles',
             $this->plugin_url . '/assets/css/booking-form-styles.css',
             array(),
-            filemtime($this->plugin_path . '/assets/css/booking-form-styles.css')
+            '3.2.1' // Updated to force cache refresh for checkbox fixes
         );
         
         // Localize script
