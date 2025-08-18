@@ -28,8 +28,6 @@ class BookingEmail {
         
         $headers = array('Content-Type: text/html; charset=UTF-8');
         
-        error_log('Sending admin notification email to: ' . apply_filters('leobo_booking_admin_email', 'reservations@leobo.co.za'));
-        
         $result = wp_mail(
             apply_filters('leobo_booking_admin_email', 'reservations@leobo.co.za'),
             $subject,
@@ -37,7 +35,6 @@ class BookingEmail {
             $headers
         );
         
-        error_log('Admin email send result: ' . ($result ? 'SUCCESS' : 'FAILED'));
         return $result;
     }
     
@@ -54,8 +51,6 @@ class BookingEmail {
         
         $headers = array('Content-Type: text/html; charset=UTF-8');
         
-        error_log('Sending user confirmation email to: ' . $booking_data['email']);
-        
         $result = wp_mail(
             $booking_data['email'],
             $subject,
@@ -63,7 +58,6 @@ class BookingEmail {
             $headers
         );
         
-        error_log('User email send result: ' . ($result ? 'SUCCESS' : 'FAILED'));
         return $result;
     }
     
@@ -87,26 +81,7 @@ class BookingEmail {
         );
     }
     
-    /**
-     * Send booking cancellation email
-     */
-    public function send_cancellation_notification($booking_id, $booking_data, $reason = '') {
-        $subject = 'Booking Cancelled #' . $booking_id . ' - Leobo Private Reserve';
-        $message = $this->get_email_template('booking-cancellation', array(
-            'booking_id' => $booking_id,
-            'booking_data' => $booking_data,
-            'reason' => $reason
-        ));
-        
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        
-        return wp_mail(
-            $booking_data['email'],
-            $subject,
-            $message,
-            $headers
-        );
-    }
+
     
     /**
      * Get email template content
