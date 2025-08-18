@@ -1909,7 +1909,6 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
         grid-row: 1;
     }
 }
-    }
     
     .booking-main-content,
     .booking-sidebar {
@@ -1945,7 +1944,6 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
     }
-}
 
 @media (max-width: 480px) {
     /* Extra small screens - phones in portrait */
@@ -2081,7 +2079,6 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
         padding: 2px 4px;
         min-width: 14px;
     }
-}
 }
 
 /* ====================
