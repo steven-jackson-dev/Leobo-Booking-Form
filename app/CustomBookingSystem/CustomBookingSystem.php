@@ -25,7 +25,7 @@ class LeoboCustomBookingSystem {
         // Initialize components
         $this->include_dependencies();
         $this->pricing = new LeoboBookingPricing();
-        $this->database = new BookingDatabase();
+        $this->database = new LeoboBookingDatabase();
         $this->email = new BookingEmail();
         
         // Register hooks
@@ -123,15 +123,7 @@ class LeoboCustomBookingSystem {
             $load_test_script = true;
         }
         
-        if ($load_test_script) {
-            wp_enqueue_script(
-                'leobo-test-booking-form',
-                $this->plugin_url . '/assets/js/test-booking-form.js',
-                array('jquery', 'leobo-booking-form'),
-                '1.0.1', // Updated version for fixes
-                true
-            );
-        }
+        // Test script loading removed - test functionality is integrated into main booking-form.js
         
         // Booking form styles
         wp_enqueue_style(
@@ -145,10 +137,6 @@ class LeoboCustomBookingSystem {
         try {
             $frontend_data = $this->pricing->get_frontend_data();
             $blocked_dates = $this->get_blocked_dates_for_frontend();
-            
-            // Debug: Log what blocked dates are being sent to frontend
-            error_log('=== Script Localization ===');
-            error_log('Blocked dates being sent to frontend (' . count($blocked_dates) . ' total): ' . print_r($blocked_dates, true));
             
             wp_localize_script('leobo-booking-form', 'leobo_booking_system', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
@@ -325,21 +313,23 @@ class LeoboCustomBookingSystem {
      * AJAX: Submit booking request
      */
     public function ajax_submit_booking() {
-        // Add comprehensive debugging
-        error_log('=== BOOKING SUBMISSION DEBUG START ===');
-        error_log('Raw $_POST data: ' . print_r($_POST, true));
+        // Temporary debug logging
+        error_log('AJAX SUBMISSION START');
         
-        // Temporarily disable nonce check for debugging
-        // if (!check_ajax_referer('leobo_booking_system_nonce', 'nonce', false)) {
-        //     error_log('NONCE VERIFICATION FAILED');
-        //     wp_send_json_error('Security verification failed');
-        //     return;
-        // }
+        // Check nonce for security
+        if (!check_ajax_referer('leobo_booking_system_nonce', 'nonce', false)) {
+            error_log('NONCE CHECK FAILED');
+            wp_send_json_error('Security verification failed');
+            return;
+        }
+        
+        error_log('NONCE CHECK PASSED');
         
         try {
             // Sanitize input
+            error_log('STARTING DATA SANITIZATION');
             $booking_data = $this->sanitize_booking_data($_POST);
-            error_log('Sanitized booking data: ' . print_r($booking_data, true));
+            error_log('DATA SANITIZATION COMPLETED');
         
             // Check if this is a test submission
             $is_test = isset($_POST['is_test_submission']) && $_POST['is_test_submission'] == '1';
@@ -348,21 +338,19 @@ class LeoboCustomBookingSystem {
                 // Add test identifier to booking data
                 $booking_data['is_test_booking'] = true;
                 $booking_data['booking_source'] = 'Test Form Submission';
-                
-                // Log test submission
-                error_log('🧪 Test booking submission received: ' . print_r($booking_data, true));
             }
-            
-            error_log('=== BOOKING SUBMISSION DEBUG END ===');
             
             // Skip availability validation since this is an enquiry form, not a booking system
             // Real bookings would need availability validation, but enquiries should always be allowed
             
             // Save booking
+            error_log('STARTING DATABASE SAVE');
             $booking_id = $this->database->save_booking($booking_data);
+            error_log('DATABASE SAVE RESULT: ' . ($booking_id ? 'SUCCESS (ID: ' . $booking_id . ')' : 'FAILED'));
             
             if ($booking_id) {
                 // Send notifications (with test identifier in subject if test)
+                error_log('STARTING EMAIL NOTIFICATIONS');
                 if ($is_test) {
                     $this->email->send_admin_notification($booking_id, $booking_data, '[TEST]');
                     $this->email->send_user_confirmation($booking_id, $booking_data, '[TEST]');
@@ -370,6 +358,7 @@ class LeoboCustomBookingSystem {
                     $this->email->send_admin_notification($booking_id, $booking_data);
                     $this->email->send_user_confirmation($booking_id, $booking_data);
                 }
+                error_log('EMAIL NOTIFICATIONS COMPLETED');
                 
                 // Allow custom actions
                 do_action('leobo_booking_submitted', $booking_id, $booking_data);
@@ -384,12 +373,18 @@ class LeoboCustomBookingSystem {
                     'is_test' => $is_test
                 ));
             } else {
+                error_log('DATABASE SAVE FAILED - no booking ID returned');
                 wp_send_json_error('Failed to save booking request');
             }
             
         } catch (Exception $e) {
-            error_log('BOOKING SUBMISSION ERROR: ' . $e->getMessage());
-            wp_send_json_error('Server error: ' . $e->getMessage());
+            error_log('EXCEPTION CAUGHT: ' . $e->getMessage());
+            error_log('EXCEPTION TRACE: ' . $e->getTraceAsString());
+            wp_send_json_error('An error occurred while processing your booking request.');
+        } catch (Error $e) {
+            error_log('FATAL ERROR CAUGHT: ' . $e->getMessage());
+            error_log('ERROR TRACE: ' . $e->getTraceAsString());
+            wp_send_json_error('A fatal error occurred while processing your booking request.');
         }
     }
     
@@ -397,6 +392,17 @@ class LeoboCustomBookingSystem {
      * Sanitize booking form data
      */
     private function sanitize_booking_data($post_data) {
+        // Helper function to safely handle arrays for transfer and experiences
+        $sanitize_array_field = function($value) {
+            if (!isset($value)) {
+                return null;
+            }
+            if (is_array($value)) {
+                return implode(', ', array_map('sanitize_text_field', $value));
+            }
+            return sanitize_text_field($value);
+        };
+        
         $data = array(
             'checkin_date' => sanitize_text_field($post_data['checkin_date']),
             'checkout_date' => sanitize_text_field($post_data['checkout_date']),
@@ -405,8 +411,8 @@ class LeoboCustomBookingSystem {
             'babies' => intval($post_data['babies'] ?? 0),
             'accommodation' => sanitize_text_field($post_data['accommodation'] ?? ''),
             'helicopter_package' => isset($post_data['helicopter_package']) ? sanitize_text_field($post_data['helicopter_package']) : null,
-            'transfer_options' => isset($post_data['transfer']) ? implode(', ', array_map('sanitize_text_field', $post_data['transfer'])) : null,
-            'experiences' => isset($post_data['experiences']) ? implode(', ', array_map('sanitize_text_field', $post_data['experiences'])) : null,
+            'transfer_options' => $sanitize_array_field($post_data['transfer'] ?? null),
+            'experiences' => $sanitize_array_field($post_data['experiences'] ?? null),
             'occasion' => sanitize_text_field($post_data['occasion'] ?? ''),
             'full_name' => sanitize_text_field($post_data['full_name']),
             'email' => sanitize_email($post_data['email']),
@@ -482,35 +488,25 @@ class LeoboCustomBookingSystem {
         
         // Debug: Log test data status
         if ($test_data) {
-            error_log('✅ Test data found! Processing test blocked dates...');
-            error_log('Test data structure: ' . print_r($test_data, true));
+            // Test data found, processing
         } else {
-            error_log('❌ No test data found, will use live API data');
+            // No test data found, will use live API data
         }
         
         if ($test_data && isset($test_data['api_response']['availability_data'])) {
             // Extract blocked dates from test API response
             $raw_blocked_dates = array();
             
-            error_log('Processing test API response data...');
             foreach ($test_data['api_response']['availability_data'] as $room_index => $room_data) {
-                error_log("Processing room data index {$room_index}:");
-                
                 foreach ($room_data as $date => $availability) {
                     // Skip non-date keys
                     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-                        error_log("Skipping non-date key: {$date}");
                         continue;
                     }
-                    
-                    error_log("Checking date {$date}: availability = " . ($availability['availability'] ?? 'N/A'));
                     
                     // Collect dates where availability is 0
                     if (isset($availability['availability']) && $availability['availability'] == 0) {
                         $raw_blocked_dates[] = $date;
-                        error_log("🔴 Date {$date} collected as blocked (availability = 0)");
-                    } else {
-                        error_log("🟢 Date {$date} available (availability = " . ($availability['availability'] ?? 'N/A') . ")");
                     }
                 }
             }
@@ -522,15 +518,12 @@ class LeoboCustomBookingSystem {
             // Process to allow check-in on last day of consecutive blocked periods
             $final_blocked_dates = $this->process_blocked_periods($raw_blocked_dates);
             
-            error_log('✅ Final test blocked dates after processing (' . count($final_blocked_dates) . ' total): ' . print_r($final_blocked_dates, true));
             return $final_blocked_dates;
         }
         
         // Fall back to live API data
-        error_log('📡 Using live API data...');
         global $leobo_booking_availability;
-        $live_blocked_dates = $leobo_booking_availability->get_blocked_dates(1, 'Y-m-d'); // API returns all dates regardless of range
-        error_log('Live blocked dates (' . count($live_blocked_dates) . ' total): ' . print_r($live_blocked_dates, true));
+        $live_blocked_dates = $leobo_booking_availability->get_blocked_dates(1, 'Y-m-d');
         return $live_blocked_dates;
     }
     

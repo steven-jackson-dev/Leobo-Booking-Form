@@ -189,10 +189,6 @@ class LeoboBookingDatabase {
             }
         }
         
-        // Add debugging before database insert
-        error_log('=== DATABASE INSERT DEBUG ===');
-        error_log('Insert data being saved: ' . print_r($insert_data, true));
-        
         $result = $wpdb->insert(
             $this->table_name,
             $insert_data,
@@ -224,7 +220,6 @@ class LeoboBookingDatabase {
         
         if ($result === false) {
             error_log('Database insert error: ' . $wpdb->last_error);
-            error_log('Insert data: ' . print_r($insert_data, true));
         }
         
         return $result ? $wpdb->insert_id : false;

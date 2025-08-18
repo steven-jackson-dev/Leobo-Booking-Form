@@ -1221,15 +1221,20 @@ document.head.appendChild(testAnimationStyles);
 
 // Initialize test mode
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== PAGE LOAD DEBUG ===');
-    console.log('Test mode:', isTestMode);
-    console.log('Embedded admin:', isEmbeddedAdmin);
+    // Debug logging (only in development)
+    const DEBUG = false; // Set to true for debugging
     
-    // Check initial field values
-    console.log('Initial checkin_date:', document.getElementById('arrival-date')?.value);
-    console.log('Initial checkout_date:', document.getElementById('departure-date')?.value);
-    console.log('Initial adults:', document.getElementById('adults')?.value);
-    console.log('Initial accommodation:', document.querySelector('input[name="accommodation"]')?.value);
+    if (DEBUG) {
+        console.log('=== PAGE LOAD DEBUG ===');
+        console.log('Test mode:', isTestMode);
+        console.log('Embedded admin:', isEmbeddedAdmin);
+        
+        // Check initial field values
+        console.log('Initial checkin_date:', document.getElementById('arrival-date')?.value);
+        console.log('Initial checkout_date:', document.getElementById('departure-date')?.value);
+        console.log('Initial adults:', document.getElementById('adults')?.value);
+        console.log('Initial accommodation:', document.querySelector('input[name="accommodation"]')?.value);
+    }
     
     if (isTestMode) {
         // Auto-fill test data on page load (only if not in embedded admin mode)
@@ -1244,57 +1249,61 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update calculated total before form submission
     document.getElementById('leobo-booking-form').addEventListener('submit', function(e) {
-        alert('Form submission intercepted! Check console for details.');
-        console.log('=== FORM SUBMISSION DEBUG ===');
+        if (DEBUG) {
+            alert('Form submission intercepted! Check console for details.');
+            console.log('=== FORM SUBMISSION DEBUG ===');
+        }
         
         // Get the displayed total price and extract numeric value
         const totalPriceElement = document.getElementById('total-price');
         if (totalPriceElement) {
             const totalText = totalPriceElement.textContent || totalPriceElement.innerText;
-            console.log('Total price element text:', totalText);
+            if (DEBUG) console.log('Total price element text:', totalText);
             // Extract numeric value from "R 144,500" format
             const totalValue = totalText.replace(/[^\d]/g, '');
-            console.log('Extracted total value:', totalValue);
+            if (DEBUG) console.log('Extracted total value:', totalValue);
             document.getElementById('calculated-total-field').value = totalValue;
         } else {
-            console.log('Total price element not found');
+            if (DEBUG) console.log('Total price element not found');
         }
         
         // Ensure helicopter selection consistency
         const helicopterPackageSelected = document.querySelector('input[name="helicopter_package"]:checked');
         if (helicopterPackageSelected) {
-            console.log('Helicopter package selected:', helicopterPackageSelected.value);
+            if (DEBUG) console.log('Helicopter package selected:', helicopterPackageSelected.value);
             // If a helicopter package is selected, make sure helicopter_interested is set to "yes"
             const helicopterYes = document.getElementById('helicopter-yes');
             if (helicopterYes) {
                 helicopterYes.checked = true;
-                console.log('Set helicopter_interested to yes');
+                if (DEBUG) console.log('Set helicopter_interested to yes');
             }
         } else {
-            console.log('No helicopter package selected');
+            if (DEBUG) console.log('No helicopter package selected');
         }
         
         // Debug: Log all form values by field name
-        console.log('=== INDIVIDUAL FIELD VALUES ===');
-        console.log('checkin_date:', document.getElementById('arrival-date')?.value || 'NOT FOUND');
-        console.log('checkout_date:', document.getElementById('departure-date')?.value || 'NOT FOUND');
-        console.log('adults:', document.getElementById('adults')?.value || 'NOT FOUND');
-        console.log('children:', document.getElementById('children')?.value || 'NOT FOUND');
-        console.log('babies:', document.getElementById('babies')?.value || 'NOT FOUND');
-        console.log('full_name:', document.getElementById('full-name')?.value || 'NOT FOUND');
-        console.log('email:', document.getElementById('email')?.value || 'NOT FOUND');
-        console.log('contact_number:', document.getElementById('contact-number')?.value || 'NOT FOUND');
-        console.log('special_requests:', document.getElementById('special-requests')?.value || 'NOT FOUND');
-        console.log('calculated_total:', document.getElementById('calculated-total-field')?.value || 'NOT FOUND');
-        
-        // Debug: Log complete form data
-        console.log('=== COMPLETE FORM DATA ===');
-        const formData = new FormData(this);
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}: "${value}"`);
+        if (DEBUG) {
+            console.log('=== INDIVIDUAL FIELD VALUES ===');
+            console.log('checkin_date:', document.getElementById('arrival-date')?.value || 'NOT FOUND');
+            console.log('checkout_date:', document.getElementById('departure-date')?.value || 'NOT FOUND');
+            console.log('adults:', document.getElementById('adults')?.value || 'NOT FOUND');
+            console.log('children:', document.getElementById('children')?.value || 'NOT FOUND');
+            console.log('babies:', document.getElementById('babies')?.value || 'NOT FOUND');
+            console.log('full_name:', document.getElementById('full-name')?.value || 'NOT FOUND');
+            console.log('email:', document.getElementById('email')?.value || 'NOT FOUND');
+            console.log('contact_number:', document.getElementById('contact-number')?.value || 'NOT FOUND');
+            console.log('special_requests:', document.getElementById('special-requests')?.value || 'NOT FOUND');
+            console.log('calculated_total:', document.getElementById('calculated-total-field')?.value || 'NOT FOUND');
+            
+            // Debug: Log complete form data
+            console.log('=== COMPLETE FORM DATA ===');
+            const formData = new FormData(this);
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: "${value}"`);
+            }
+            
+            console.log('=== END FORM SUBMISSION DEBUG ===');
         }
-        
-        console.log('=== END FORM SUBMISSION DEBUG ===');
     });
 });
 </script>
