@@ -564,7 +564,7 @@ $test_data = array(
                         <div class="thank-you-content">
                             <h2 class="thank-you-title">Thank you!</h2>
                             <p class="thank-you-message">
-                                The final step simply brings everything together and sends off the enquiry.
+                                Your luxury safari inquiry has been submitted successfully. Our team will contact you within 24 hours to discuss your booking.
                             </p>
                         </div>
                     </div>
