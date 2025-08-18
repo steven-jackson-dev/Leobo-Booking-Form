@@ -37,7 +37,7 @@ class LeoboBookingForm {
             },
             accommodation: null,
             extras: {
-                transfer: [],
+                transfer: 'no_transfer', // Default radio button selection
                 helicopter_package: null,
                 experiences: [],
                 occasion: null
@@ -78,6 +78,9 @@ class LeoboBookingForm {
         
         // Form inputs
         this.setupFormInputs();
+        
+        // Initialize default selections
+        this.initializeDefaultSelections();
         
         // Form submission
         this.setupFormSubmission();
@@ -484,10 +487,10 @@ class LeoboBookingForm {
     }
     
     setupFormInputs() {
-        // Transfer options
-        document.querySelectorAll('input[name="transfer[]"]').forEach(input => {
+        // Transfer options (radio buttons)
+        document.querySelectorAll('input[name="transfer"]').forEach(input => {
             input.addEventListener('change', (e) => {
-                this.updateTransferSelection(e.target.value, e.target.checked);
+                this.updateTransferSelection(e.target.value);
             });
         });
         
@@ -562,6 +565,22 @@ class LeoboBookingForm {
                     }, 300);
                 }
             });
+        }
+    }
+    
+    initializeDefaultSelections() {
+        // Initialize transfer selection based on checked radio button
+        const checkedTransfer = document.querySelector('input[name="transfer"]:checked');
+        if (checkedTransfer) {
+            this.formData.extras.transfer = checkedTransfer.value;
+        }
+        // If no transfer option is checked, ensure default is set
+        else {
+            const defaultTransfer = document.querySelector('input[name="transfer"][value="no_transfer"]');
+            if (defaultTransfer) {
+                defaultTransfer.checked = true;
+                this.formData.extras.transfer = 'no_transfer';
+            }
         }
     }
     
@@ -921,14 +940,9 @@ class LeoboBookingForm {
 
     
     // Extras Selection Methods
-    updateTransferSelection(value, checked) {
-        if (checked) {
-            if (!this.formData.extras.transfer.includes(value)) {
-                this.formData.extras.transfer.push(value);
-            }
-        } else {
-            this.formData.extras.transfer = this.formData.extras.transfer.filter(t => t !== value);
-        }
+    updateTransferSelection(value) {
+        // For radio buttons, just set the single selected value
+        this.formData.extras.transfer = value;
         this.updatePricing();
     }
     
@@ -1627,10 +1641,9 @@ class LeoboBookingForm {
                           document.getElementById('full-name')?.value?.includes('Test');
         
         // Collect transfer options
-        const transferOptions = [];
-        document.querySelectorAll('input[name="transfer[]"]:checked').forEach(input => {
-            transferOptions.push(input.value);
-        });
+        // Collect transfer option (radio button)
+        const transferOption = document.querySelector('input[name="transfer"]:checked');
+        const transfer = transferOption ? transferOption.value : 'no_transfer';
         
         // Collect experiences
         const experiences = [];
@@ -1649,7 +1662,7 @@ class LeoboBookingForm {
             babies: this.formData.guests.babies,
             accommodation: 'Observatory Villa',
             helicopter_package: this.formData.extras.helicopter_package,
-            transfer: transferOptions, // Array of selected transfer options
+            transfer: transfer, // Single selected transfer option
             experiences: experiences, // Array of selected experiences
             occasion: this.formData.extras.occasion || document.getElementById('occasion')?.value || '',
             flexible_dates: document.getElementById('flexible-dates')?.checked ? '1' : '0',
@@ -1672,7 +1685,7 @@ class LeoboBookingForm {
         // Add debugging
         console.log('=== EXTERNAL JS SUBMISSION DATA ===');
         console.log('Is Test Mode:', isTestMode);
-        console.log('Transfer options:', transferOptions);
+        console.log('Transfer option:', transfer);
         console.log('Experiences:', experiences);
         console.log('Raw this.formData:', this.formData);
         console.log('Flattened submissionData:', submissionData);

@@ -108,7 +108,7 @@ class LeoboCustomBookingSystem {
             'leobo-booking-form',
             $this->plugin_url . '/assets/js/booking-form.js',
             array('jquery'),
-            '3.9.3', // Enhanced blocked dates debugging
+            '3.9.4', // Fixed radio button transfer selection
             true
         );
         
@@ -413,13 +413,22 @@ class LeoboCustomBookingSystem {
     private function sanitize_booking_data($post_data) {
         // Helper function to safely handle arrays for transfer and experiences
         $sanitize_array_field = function($value) {
-            if (!isset($value)) {
+            if (!isset($value) || $value === '' || $value === null) {
                 return null;
             }
             if (is_array($value)) {
-                return implode(', ', array_map('sanitize_text_field', $value));
+                $sanitized_array = array_filter(array_map('sanitize_text_field', $value));
+                if (empty($sanitized_array)) {
+                    return null;
+                }
+                $result = implode(', ', $sanitized_array);
+                return $result;
             }
-            return sanitize_text_field($value);
+            $result = sanitize_text_field($value);
+            if (empty($result)) {
+                return null;
+            }
+            return $result;
         };
         
         $data = array(
@@ -430,7 +439,7 @@ class LeoboCustomBookingSystem {
             'babies' => intval($post_data['babies'] ?? 0),
             'accommodation' => sanitize_text_field($post_data['accommodation'] ?? ''),
             'helicopter_package' => isset($post_data['helicopter_package']) ? sanitize_text_field($post_data['helicopter_package']) : null,
-            'transfer_options' => $sanitize_array_field($post_data['transfer'] ?? null),
+            'transfer_options' => $sanitize_array_field($post_data['transfer'] ?? null) ?? 'no_transfer',
             'experiences' => $sanitize_array_field($post_data['experiences'] ?? null),
             'occasion' => sanitize_text_field($post_data['occasion'] ?? ''),
             'full_name' => sanitize_text_field($post_data['full_name']),
@@ -453,6 +462,25 @@ class LeoboCustomBookingSystem {
         }
         
         return $data;
+    }
+    
+    /**
+     * Convert transfer option value to readable label
+     */
+    private function format_transfer_option($value) {
+        if (empty($value)) {
+            return '';
+        }
+        
+        $transfer_labels = array(
+            'road_transfer' => 'Road Transfer',
+            'private_helicopter' => 'Private Helicopter',
+            'charter_flight' => 'Charter Flight',
+            'self_drive' => 'Self Drive',
+            'no_transfer' => 'No Transfer Required'
+        );
+        
+        return $transfer_labels[$value] ?? $value;
     }
     
     /**
@@ -1405,7 +1433,7 @@ class LeoboCustomBookingSystem {
                             <p style="margin: 8px 0;"><strong>Helicopter Package:</strong> <?php echo esc_html($submission->helicopter_package); ?></p>
                         <?php endif; ?>
                         <?php if (isset($submission->transfer_options) && !empty($submission->transfer_options)): ?>
-                            <p style="margin: 8px 0;"><strong>Transfer Options:</strong> <?php echo esc_html($submission->transfer_options); ?></p>
+                            <p style="margin: 8px 0;"><strong>Transfer Options:</strong> <?php echo esc_html($this->format_transfer_option($submission->transfer_options)); ?></p>
                         <?php endif; ?>
                     </div>
                     <div>

@@ -277,16 +277,21 @@ $test_data = array(
                             <h3 class="section-title"><?php echo strtoupper(booking_content('fields.checkin_date')); ?></h3>
                             <p class="section-subtitle">Transfer requests?</p>
                             
-                            <div class="checkbox-group">
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="transfer[]" value="private_helicopter" />
-                                    <span class="checkmark"></span>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="transfer" value="private_helicopter" required />
+                                    <span class="radiomark"></span>
                                     Private helicopter transfer
                                 </label>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" name="transfer[]" value="road_transfer" />
-                                    <span class="checkmark"></span>
+                                <label class="radio-option">
+                                    <input type="radio" name="transfer" value="road_transfer" required />
+                                    <span class="radiomark"></span>
                                     Road transfer by Leobo
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="transfer" value="no_transfer" required checked />
+                                    <span class="radiomark"></span>
+                                    No transfer needed
                                 </label>
                             </div>
                         </div>
@@ -978,6 +983,9 @@ function fillTestData() {
     document.getElementById('special-requests').value = originalTestData.special_requests;
     document.getElementById('children-interests').value = originalTestData.children_interests;
     
+    // Ensure default transfer option is selected
+    ensureDefaultTransferSelection();
+    
     showTestNotification('✅ Test data filled successfully!', 'success');
 }
 
@@ -1055,6 +1063,12 @@ function clearFormData() {
     document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(field => {
         field.checked = false;
     });
+    
+    // Restore default transfer selection
+    const defaultTransferOption = document.querySelector('input[name="transfer"][value="no_transfer"]');
+    if (defaultTransferOption) {
+        defaultTransferOption.checked = true;
+    }
     
     showTestNotification('🗑️ Form cleared!', 'info');
 }
@@ -1229,6 +1243,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Debug logging (only in development)
     const DEBUG = false; // Set to true for debugging
     
+    // Ensure default transfer option is always selected
+    function ensureDefaultTransferSelection() {
+        const transferRadios = document.querySelectorAll('input[name="transfer"]');
+        const hasSelection = Array.from(transferRadios).some(radio => radio.checked);
+        
+        if (!hasSelection) {
+            const defaultOption = document.querySelector('input[name="transfer"][value="no_transfer"]');
+            if (defaultOption) {
+                defaultOption.checked = true;
+                if (DEBUG) console.log('Set default transfer option: no_transfer');
+            }
+        }
+    }
+    
+    // Set default transfer selection on page load
+    ensureDefaultTransferSelection();
+    
     if (DEBUG) {
         console.log('=== PAGE LOAD DEBUG ===');
         console.log('Test mode:', isTestMode);
@@ -1284,6 +1315,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             if (DEBUG) console.log('No helicopter package selected');
+        }
+        
+        // Debug: Log transfer option selection for troubleshooting
+        const transferSelected = document.querySelector('input[name="transfer"]:checked');
+        if (transferSelected) {
+            if (DEBUG) console.log('Transfer option selected:', transferSelected.value);
+        } else {
+            if (DEBUG) console.log('⚠️ No transfer option selected - form validation should prevent this');
         }
         
         // Debug: Log all form values by field name
