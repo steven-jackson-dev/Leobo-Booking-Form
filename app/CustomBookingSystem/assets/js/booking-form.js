@@ -1123,6 +1123,15 @@ class LeoboBookingForm {
         return seasonNames[season] || 'Standard Season';
     }
     
+    formatSeasonLetter(season) {
+        const seasonLetters = {
+            christmas: 'C',
+            peak: 'P', 
+            standard: 'S'
+        };
+        return seasonLetters[season] || 'S';
+    }
+    
     // Pricing Methods
     updatePricing() {
         // Check if leobo_booking_system is available
@@ -1550,7 +1559,7 @@ class LeoboBookingForm {
             
             nightlyItem.innerHTML = `
                 <span class="nightly-date">${dateStr}</span>
-                <span class="nightly-season ${night.season || 'standard'}">${this.formatSeasonName(night.season || 'standard')}</span>
+                <span class="nightly-season ${night.season || 'standard'}">${this.formatSeasonLetter(night.season || 'standard')}</span>
                 <span class="nightly-rate">R ${this.formatPrice(night.total)}${christmasIndicator}</span>
             `;
             

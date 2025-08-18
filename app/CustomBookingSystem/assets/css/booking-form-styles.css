@@ -1120,15 +1120,18 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .summary-section {
     margin-bottom: var(--spacing-xl);
     padding: var(--spacing-lg);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--border-radius);
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .summary-section:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(212, 184, 150, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(212, 184, 150, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .summary-section:last-child {
@@ -1137,13 +1140,26 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .summary-title {
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-weight: 700;
     color: var(--leobo-gold);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
     margin: 0 0 var(--spacing-md) 0;
-    padding-bottom: var(--spacing-xs);
-    border-bottom: 1px solid rgba(212, 184, 150, 0.2);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid rgba(212, 184, 150, 0.3);
+    text-align: center;
+    position: relative;
+}
+
+.summary-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 2px;
+    background: var(--leobo-gold);
 }
 
 .guest-summary {
@@ -1227,23 +1243,50 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .price-display,
 .total-price-display {
     text-align: center;
-    padding: var(--spacing-md);
-    background: rgba(212, 184, 150, 0.1);
-    border: 1px solid rgba(212, 184, 150, 0.3);
+    padding: var(--spacing-lg);
+    background: rgba(212, 184, 150, 0.15);
+    border: 2px solid rgba(212, 184, 150, 0.4);
     border-radius: var(--border-radius);
-    margin-top: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.total-price-display {
+    background: linear-gradient(135deg, rgba(212, 184, 150, 0.2), rgba(212, 184, 150, 0.1));
+    border: 3px solid var(--leobo-gold);
+    margin-top: var(--spacing-xl);
+}
+
+.total-price-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--leobo-gold), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 .price-amount {
     font-size: var(--font-size-xl);
-    font-weight: 600;
+    font-weight: 700;
     color: var(--leobo-gold);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    margin: 0;
 }
 
 .price-amount.total {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    letter-spacing: 1px;
 }
 
 /* ====================
@@ -1253,25 +1296,30 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .cost-breakdown {
     margin: var(--spacing-lg) 0 0 0;
     padding: var(--spacing-lg);
-    background: rgba(212, 184, 150, 0.05);
-    border: 1px solid rgba(212, 184, 150, 0.2);
+    background: rgba(212, 184, 150, 0.08);
+    border: 1px solid rgba(212, 184, 150, 0.25);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .breakdown-header {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--leobo-gold);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
     text-transform: uppercase;
     font-size: var(--font-size-sm);
     letter-spacing: 1px;
-    padding-bottom: var(--spacing-xs);
-    border-bottom: 1px solid rgba(212, 184, 150, 0.3);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid rgba(212, 184, 150, 0.4);
+    text-align: center;
 }
 
 .breakdown-details {
     display: none;
+    width: 100%;
 }
 
 .breakdown-details.has-pricing {
@@ -1283,13 +1331,18 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-sm) 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     font-size: var(--font-size-sm);
     transition: all 0.2s ease;
+    line-height: 1.4;
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
 }
 
 .breakdown-item:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.03);
     padding-left: var(--spacing-xs);
     padding-right: var(--spacing-xs);
     border-radius: var(--border-radius-sm);
@@ -1297,54 +1350,71 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .breakdown-item:last-child {
     border-bottom: none;
+    padding-bottom: 0;
 }
 
 .breakdown-item-label {
-    color: var(--text-secondary);
+    color: var(--text-primary);
     flex: 1;
+    font-weight: 500;
+    min-width: 0;
+    word-wrap: break-word;
 }
 
 .breakdown-item-detail {
     color: var(--text-muted);
     font-size: var(--font-size-xs);
-    margin-left: var(--spacing-sm);
+    margin-left: var(--spacing-xs);
     flex: 0 0 auto;
+    font-style: italic;
 }
 
 .breakdown-item-amount {
     color: var(--leobo-gold);
-    font-weight: 500;
+    font-weight: 600;
     text-align: right;
     min-width: 80px;
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
 }
 
 .breakdown-divider {
-    height: 1px;
-    background: var(--border-color);
-    margin: var(--spacing-md) 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--leobo-gold), transparent);
+    margin: var(--spacing-lg) 0;
+    width: 100%;
 }
 
 .breakdown-subtotal {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-md) 0 var(--spacing-sm) 0;
-    font-weight: 600;
+    padding: var(--spacing-md);
+    font-weight: 700;
     color: var(--text-primary);
     border-top: 2px solid var(--leobo-gold);
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    background: rgba(212, 184, 150, 0.05);
+    border-radius: var(--border-radius);
+    margin-left: calc(var(--spacing-lg) * -1);
+    margin-right: calc(var(--spacing-lg) * -1);
+    margin-bottom: calc(var(--spacing-lg) * -1);
+    width: calc(100% + calc(var(--spacing-lg) * 2));
+    box-sizing: border-box;
 }
 
 .breakdown-subtotal-label {
     text-transform: uppercase;
     font-size: var(--font-size-sm);
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    font-weight: 700;
 }
 
 .breakdown-subtotal-amount {
     color: var(--leobo-gold);
     font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive adjustments for breakdown */
@@ -1368,11 +1438,14 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 /* Enhanced Breakdown Sections */
 .breakdown-section {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
     padding: var(--spacing-md);
     background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .breakdown-season-header {
@@ -1380,6 +1453,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-sm);
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
 }
 
 .season-badge {
@@ -1392,6 +1467,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
 }
 
 .season-badge.peak {
@@ -1472,15 +1548,20 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .breakdown-nightly-details {
     margin-top: var(--spacing-sm);
+    overflow: hidden;
+    width: 100%;
 }
 
 .nightly-item {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: var(--spacing-xs);
     align-items: center;
-    padding: var(--spacing-xs) 0;
+    padding: var(--spacing-sm) 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: var(--font-size-xs);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .nightly-item:last-child {
@@ -1490,35 +1571,45 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .nightly-date {
     font-weight: 500;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nightly-season {
-    padding: 2px 6px;
-    border-radius: 10px;
+    padding: 3px 6px;
+    border-radius: 12px;
     font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
-    margin: 0 var(--spacing-xs);
+    letter-spacing: 0.5px;
+    min-width: 18px;
+    text-align: center;
+    flex-shrink: 0;
 }
 
 .nightly-season.standard {
-    background: rgba(76, 175, 80, 0.2);
+    background: rgba(76, 175, 80, 0.3);
     color: #4caf50;
 }
 
 .nightly-season.peak {
-    background: rgba(255, 107, 53, 0.2);
+    background: rgba(255, 107, 53, 0.3);
     color: #ff6b35;
 }
 
 .nightly-season.christmas {
-    background: rgba(233, 30, 99, 0.2);
+    background: rgba(233, 30, 99, 0.3);
     color: #e91e63;
 }
 
 .nightly-rate {
     color: var(--leobo-gold);
-    font-weight: 500;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+    font-size: var(--font-size-xs);
+}
 }
 
 .christmas-premium-indicator {
