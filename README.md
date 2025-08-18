@@ -6,12 +6,19 @@ A comprehensive WordPress custom booking system designed specifically for Leobo 
 
 ## 🌟 Features
 
-### **🚀 LATEST: Smart Blocked Date Management (v3.9.3)**
+### **🚀 LATEST: Smart Blocked Date Management (v3.9.4)**
 - ✨ **Intelligent Consecutive Periods** - Last day of blocked periods available for check-in
 - ✨ **Safari Lodge Logic** - Matches real-world operations (morning checkout, evening arrival)
 - ✨ **Optimized API Calls** - 92% reduction in API requests (single-call architecture)
 - ✨ **Timezone-Safe Calendar** - Accurate date display regardless of user timezone
 - ✨ **Priority Date Logic** - Blocked dates properly override past/future classification
+
+### **🎨 LATEST: Enhanced UI/UX (v3.9.4)**
+- ✨ **Improved Transfer Options** - Radio button interface with proper data handling
+- ✨ **Consistent Form Styling** - Unified dropdown and form element design
+- ✨ **Enhanced Sidebar** - Professional cost breakdown with visual hierarchy
+- ✨ **Mobile-First Design** - Optimized responsive layout with sidebar below form on mobile
+- ✨ **Compact Season Display** - Single-letter indicators (S/P/C) for better mobile readability
 
 ### **Multi-Step Booking Process**
 - **Step 1: Availability Check** - Advanced calendar with smart blocked date visualization
@@ -35,10 +42,13 @@ A comprehensive WordPress custom booking system designed specifically for Leobo 
 
 ### **Professional Design**
 - 🎨 **Dark Theme** - Sophisticated black/gold Leobo branding
-- 🎨 **Responsive Layout** - Optimized for desktop, tablet, and mobile
+- 🎨 **Responsive Layout** - Optimized for desktop, tablet, and mobile with sidebar below form on mobile
 - 🎨 **Progress Indicators** - Clear step-by-step navigation
 - 🎨 **Visual Feedback** - Loading states, error handling, and success messages
 - 🎨 **Custom Icons** - Branded visual elements throughout
+- 🎨 **Consistent Form Elements** - Unified styling for dropdowns, radio buttons, and inputs
+- 🎨 **Enhanced Sidebar** - Professional cost breakdown with visual hierarchy and animations
+- 🎨 **Mobile Optimization** - Touch-friendly interface with compact season indicators
 
 ### **Guest Management**
 - 👥 **Flexible Guest Counts** - Adults, children (4+ years), babies (0-3 years)
@@ -381,7 +391,12 @@ For technical support or customization requests:
 - ✅ **Enhanced Debugging** - Comprehensive logging and diagnostic tools
 - ✅ **Real-World Booking Logic** - Same-day turnover support matching operational requirements
 - ✅ **Priority Date Classification** - Blocked dates properly override past/future status
-- ✅ **Mobile Optimization** - Touch-friendly interface with consistent behavior
+- ✅ **Transfer Options Redesign** - Radio button interface replacing checkboxes with proper data handling
+- ✅ **Form Styling Consistency** - Unified dropdown and form element design matching dark theme
+- ✅ **Enhanced Sidebar Design** - Professional cost breakdown with visual hierarchy and animations
+- ✅ **Mobile-First Responsive** - Optimized layout with sidebar below form on mobile devices
+- ✅ **Compact Season Display** - Single-letter indicators (S/P/C) for better mobile readability
+- ✅ **Touch-Friendly Interface** - Improved mobile interactions and form usability
 - ✅ **Error Handling** - Graceful degradation and comprehensive user feedback
 
 ---
