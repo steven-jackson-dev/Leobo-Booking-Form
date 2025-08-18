@@ -36,6 +36,7 @@ class LeoboCustomBookingSystem {
      * Include all required files
      */
     private function include_dependencies() {
+        require_once $this->plugin_path . '/includes/BookingContent.php';
         require_once $this->plugin_path . '/includes/BookingAvailability.php';
         require_once $this->plugin_path . '/includes/BookingPricing.php';
         require_once $this->plugin_path . '/includes/BookingDatabase.php';
@@ -148,6 +149,15 @@ class LeoboCustomBookingSystem {
                 'guest_rules' => $frontend_data['guest_rules'] ?? array(),
                 'blocked_dates' => $blocked_dates,
                 'season_dates' => $this->get_season_dates_for_calendar(),
+                'content' => array(
+                    'steps' => LeoboBookingContent::getStepLabels(),
+                    'errors' => LeoboBookingContent::getSection('errors'),
+                    'success' => LeoboBookingContent::getSection('success'),
+                    'loading' => LeoboBookingContent::getSection('loading'),
+                    'calendar' => LeoboBookingContent::getSection('calendar'),
+                    'form' => LeoboBookingContent::getSection('form'),
+                    'business' => LeoboBookingContent::getSection('business')
+                ),
                 'acf_config' => array(
                     'adults_max' => get_field('max_adults', 'option') ?: 6,  // Maximum 6 adults in house
                     'children_max' => get_field('max_children', 'option') ?: 8,
@@ -167,6 +177,15 @@ class LeoboCustomBookingSystem {
                 'seasons' => array(),
                 'guest_rules' => array(),
                 'blocked_dates' => array(),
+                'content' => array(
+                    'steps' => LeoboBookingContent::getStepLabels(),
+                    'errors' => LeoboBookingContent::getSection('errors'),
+                    'success' => LeoboBookingContent::getSection('success'),
+                    'loading' => LeoboBookingContent::getSection('loading'),
+                    'calendar' => LeoboBookingContent::getSection('calendar'),
+                    'form' => LeoboBookingContent::getSection('form'),
+                    'business' => LeoboBookingContent::getSection('business')
+                ),
                 'acf_config' => array(
                     'adults_max' => 6,  // Maximum 6 adults in house
                     'children_max' => 8,
@@ -256,7 +275,7 @@ class LeoboCustomBookingSystem {
             
             // Validate required fields
             if (empty($checkin) || empty($checkout)) {
-                wp_send_json_error('Check-in and check-out dates are required');
+                wp_send_json_error(LeoboBookingContent::getError('validation_error', 'Check-in and check-out dates are required'));
                 return;
             }
             
@@ -265,12 +284,12 @@ class LeoboCustomBookingSystem {
             $checkout_date = DateTime::createFromFormat('Y-m-d', $checkout);
             
             if (!$checkin_date || !$checkout_date) {
-                wp_send_json_error('Invalid date format. Please use YYYY-MM-DD format');
+                wp_send_json_error(LeoboBookingContent::getError('validation_error', 'Invalid date format. Please use YYYY-MM-DD format'));
                 return;
             }
             
             if ($checkin_date >= $checkout_date) {
-                wp_send_json_error('Check-out date must be after check-in date');
+                wp_send_json_error(LeoboBookingContent::getError('validation_error', 'Check-out date must be after check-in date'));
                 return;
             }
             
@@ -287,7 +306,7 @@ class LeoboCustomBookingSystem {
             
         } catch (Exception $e) {
             error_log('Leobo Booking Price Calculation Error: ' . $e->getMessage());
-            wp_send_json_error('Sorry, there was an error calculating the price. Please try again or contact support.');
+            wp_send_json_error(LeoboBookingContent::getError('pricing_calculation_error', 'Sorry, there was an error calculating the price. Please try again or contact support.'));
         }
     }
     
@@ -364,8 +383,8 @@ class LeoboCustomBookingSystem {
                 do_action('leobo_booking_submitted', $booking_id, $booking_data);
                 
                 $message = $is_test ? 
-                    '🧪 Test booking submitted successfully! Check admin panel for new entry.' : 
-                    'Booking request submitted successfully!';
+                    LeoboBookingContent::getSuccess('test_booking_submitted') : 
+                    LeoboBookingContent::getSuccess('booking_submitted');
                 
                 wp_send_json_success(array(
                     'message' => $message,

@@ -20,6 +20,11 @@ $atts = $args['attributes'] ?? array();
 $is_test_mode = isset($atts['test_mode']) && $atts['test_mode'];
 $is_embedded_admin = isset($atts['embedded_admin']) && $atts['embedded_admin'];
 
+// Content helper function
+function booking_content($key, $default = '', $replacements = array()) {
+    return LeoboBookingContent::get($key, $default, $replacements);
+}
+
 // Test data for pre-filling (only used in test mode)
 $test_data = array(
     'checkin_date' => '2025-08-25',
@@ -42,7 +47,7 @@ $test_data = array(
 <!-- Test Mode Controls Panel -->
 <div class="test-mode-panel">
     <div class="test-panel-header">
-        <div class="test-badge">🧪 TEST MODE</div>
+        <div class="test-badge"><?php echo booking_content('test_mode.indicator'); ?></div>
         <div class="test-info">
             <strong>Live Form with Test Data:</strong> This is the actual booking form with pre-filled test data for quick testing.
         </div>
@@ -119,7 +124,7 @@ $test_data = array(
                         
                         <!-- Dates Section -->
                         <div class="form-section dates-section">
-                            <h3 class="section-title">Dates</h3>
+                            <h3 class="section-title"><?php echo esc_html(booking_content('sections.dates')); ?></h3>
                             
                             <div class="date-input-wrapper">
                                 <!-- Custom Date Picker -->
@@ -127,13 +132,13 @@ $test_data = array(
                                     <div class="date-picker-trigger" id="date-picker-trigger">
                                         <div class="selected-dates">
                                             <div class="arrival-display">
-                                                <span class="date-label">Arrival</span>
-                                                <span class="date-value" id="arrival-display">Select date</span>
+                                                <span class="date-label"><?php echo esc_html(booking_content('fields.checkin_date')); ?></span>
+                                                <span class="date-value" id="arrival-display"><?php echo esc_html(booking_content('fields.select_date')); ?></span>
                                             </div>
                                             <div class="date-separator">→</div>
                                             <div class="departure-display">
-                                                <span class="date-label">Departure</span>
-                                                <span class="date-value" id="departure-display">Select date</span>
+                                                <span class="date-label"><?php echo esc_html(booking_content('fields.checkout_date')); ?></span>
+                                                <span class="date-value" id="departure-display"><?php echo esc_html(booking_content('fields.select_date')); ?></span>
                                             </div>
                                         </div>
                                         <div class="date-picker-icon">📅</div>
@@ -233,7 +238,7 @@ $test_data = array(
 
                             <!-- What's Included Section -->
                             <div class="form-section included-section">
-                                <h3 class="section-title">What's included in the price?</h3>
+                                <h3 class="section-title"><?php echo esc_html(booking_content('sections.included')); ?></h3>
                                 <ul class="included-list">
                                     <li>Exclusive use of entire 8000 hectare (20,000 acre) private reserve</li>
                                     <li>Full use of Observatory Villa with all facilities</li>
@@ -254,7 +259,7 @@ $test_data = array(
                         <!-- Step Navigation -->
                         <div class="step-navigation">
                             <button type="button" class="btn btn-primary next-step" data-next="2">
-                                NEXT
+                                <?php echo strtoupper(booking_content('buttons.next')); ?>
                             </button>
                         </div>
                     </div>
@@ -264,12 +269,12 @@ $test_data = array(
                 <div class="booking-step booking-step-2" data-step="2">
                     <div class="step-content">
                         
-                        <h2 class="step-title">Tailor your stay</h2>
-                        <p class="step-subtitle">The following are optional extras available for your stay, at additional costs:</p>
+                        <h2 class="step-title"><?php echo esc_html(booking_content('step_titles.2.title')); ?></h2>
+                        <p class="step-subtitle"><?php echo esc_html(booking_content('step_titles.2.subtitle')); ?></p>
 
                         <!-- Arrival Section -->
                         <div class="form-section">
-                            <h3 class="section-title">ARRIVAL</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('fields.checkin_date')); ?></h3>
                             <p class="section-subtitle">Transfer requests?</p>
                             
                             <div class="checkbox-group">
@@ -288,7 +293,7 @@ $test_data = array(
 
                         <!-- Helicopter Package Section -->
                         <div class="form-section">
-                            <h3 class="section-title">HELICOPTER PACKAGE</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('sections.helicopter')); ?></h3>
                             <p class="section-subtitle">Would you like to add a helicopter adventure package?</p>
                             
                             <div class="radio-group">
@@ -369,7 +374,7 @@ $test_data = array(
 
                         <!-- Add-on Experiences Section -->
                         <div class="form-section">
-                            <h3 class="section-title">ADD-ON EXPERIENCES</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('sections.experiences')); ?></h3>
                             
                             <div class="experiences-grid">
                                 <label class="experience-option">
@@ -407,11 +412,11 @@ $test_data = array(
 
                         <!-- Occasion Section -->
                         <div class="form-section">
-                            <h3 class="section-title">OCCASION?</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('sections.occasion')); ?></h3>
                             
                             <div class="select-wrapper">
                                 <select name="occasion" id="occasion">
-                                    <option value="">Please select</option>
+                                    <option value=""><?php echo esc_html(booking_content('fields.please_select')); ?></option>
                                     <option value="birthday">Birthday</option>
                                     <option value="anniversary">Anniversary</option>
                                     <option value="honeymoon">Honeymoon</option>
@@ -425,10 +430,10 @@ $test_data = array(
                         <!-- Step Navigation -->
                         <div class="step-navigation">
                             <button type="button" class="btn btn-secondary back-step" data-back="1">
-                                BACK
+                                <?php echo strtoupper(booking_content('buttons.back')); ?>
                             </button>
                             <button type="button" class="btn btn-primary next-step" data-next="3">
-                                NEXT
+                                <?php echo strtoupper(booking_content('buttons.next')); ?>
                             </button>
                         </div>
                     </div>
@@ -438,37 +443,37 @@ $test_data = array(
                 <div class="booking-step booking-step-3" data-step="3">
                     <div class="step-content">
                         
-                        <h2 class="step-title">Guest information</h2>
-                        <p class="step-subtitle">You've selected your dates — now let's get to know you. A few essential details so we can tailor your stay.</p>
+                        <h2 class="step-title"><?php echo esc_html(booking_content('step_titles.3.title')); ?></h2>
+                        <p class="step-subtitle"><?php echo esc_html(booking_content('step_titles.3.subtitle')); ?></p>
 
                         <!-- Your Information Section -->
                         <div class="form-section">
-                            <h3 class="section-title">YOUR INFORMATION</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('sections.guest_info')); ?></h3>
                             
                             <div class="form-fields">
                                 <div class="form-field">
-                                    <input type="text" id="full-name" name="full_name" placeholder="Full name" 
+                                    <input type="text" id="full-name" name="full_name" placeholder="<?php echo esc_attr(booking_content('fields.full_name')); ?>" 
                                            value="<?php echo $is_test_mode ? esc_attr($test_data['full_name']) : ''; ?>" required />
                                 </div>
                                 
                                 <div class="form-field">
-                                    <input type="email" id="email" name="email" placeholder="Email address" 
+                                    <input type="email" id="email" name="email" placeholder="<?php echo esc_attr(booking_content('fields.email')); ?>" 
                                            value="<?php echo $is_test_mode ? esc_attr($test_data['email']) : ''; ?>" required />
                                 </div>
                                 
                                 <div class="form-field">
-                                    <input type="tel" id="contact-number" name="contact_number" placeholder="Contact number" 
+                                    <input type="tel" id="contact-number" name="contact_number" placeholder="<?php echo esc_attr(booking_content('fields.contact_number')); ?>" 
                                            value="<?php echo $is_test_mode ? esc_attr($test_data['contact_number']) : ''; ?>" required />
                                 </div>
                                 
                                 <div class="form-field">
-                                    <input type="text" id="home-address" name="home_address" placeholder="Home address" 
+                                    <input type="text" id="home-address" name="home_address" placeholder="<?php echo esc_attr(booking_content('fields.home_address')); ?>" 
                                            value="<?php echo $is_test_mode ? esc_attr($test_data['home_address']) : ''; ?>" />
                                 </div>
                                 
                                 <div class="form-field">
                                     <select id="country" name="country">
-                                        <option value="">Country of residence</option>
+                                        <option value=""><?php echo esc_html(booking_content('fields.country_residence')); ?></option>
                                         <option value="US">United States</option>
                                         <option value="UK">United Kingdom</option>
                                         <option value="CA">Canada</option>
@@ -501,11 +506,11 @@ $test_data = array(
 
                         <!-- How Did You Hear About Us -->
                         <div class="form-section">
-                            <h3 class="section-title">HOW DID YOU HEAR ABOUT US?</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('sections.referral')); ?></h3>
                             
                             <div class="select-wrapper">
                                 <select name="how_heard" id="how-heard">
-                                    <option value="">Please select</option>
+                                    <option value=""><?php echo esc_html(booking_content('fields.please_select')); ?></option>
                                     <option value="google" <?php echo ($is_test_mode && $test_data['how_heard'] === 'google') ? 'selected' : ''; ?>>Google Search</option>
                                     <option value="social_media">Social Media</option>
                                     <option value="travel_agent">Travel Agent</option>
@@ -519,22 +524,22 @@ $test_data = array(
 
                         <!-- Special Requests Section -->
                         <div class="form-section">
-                            <h3 class="section-title">SPECIAL REQUESTS</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('sections.special_requests')); ?></h3>
                             
                             <div class="form-field">
                                 <textarea name="special_requests" id="special-requests" 
-                                          placeholder="Anything else you'd like us to know?"
+                                          placeholder="<?php echo esc_attr(booking_content('fields.special_requests')); ?>"
                                           rows="4"><?php echo $is_test_mode ? esc_textarea($test_data['special_requests']) : ''; ?></textarea>
                             </div>
                         </div>
 
                         <!-- Children's Interests Section -->
                         <div class="form-section">
-                            <h3 class="section-title">CHILDRENS INTERESTS (IF APPLICABLE)</h3>
+                            <h3 class="section-title"><?php echo strtoupper(booking_content('sections.children_interests')); ?></h3>
                             
                             <div class="form-field">
                                 <textarea name="children_interests" id="children-interests" 
-                                          placeholder="What do they love? Stargazing, horses, camping, quad biking?"
+                                          placeholder="<?php echo esc_attr(booking_content('fields.children_interests')); ?>"
                                           rows="3"><?php echo $is_test_mode ? esc_textarea($test_data['children_interests']) : ''; ?></textarea>
                             </div>
                         </div>
@@ -549,10 +554,10 @@ $test_data = array(
                         <!-- Step Navigation -->
                         <div class="step-navigation">
                             <button type="button" class="btn btn-secondary back-step" data-back="2">
-                                BACK
+                                <?php echo strtoupper(booking_content('buttons.back')); ?>
                             </button>
                             <button type="submit" class="btn btn-primary submit-btn" id="submit-booking">
-                                <?php echo $is_test_mode ? '🧪 SUBMIT TEST BOOKING' : 'SUBMIT'; ?>
+                                <?php echo $is_test_mode ? '🧪 ' . strtoupper(booking_content('buttons.submit_test')) : strtoupper(booking_content('buttons.submit')); ?>
                             </button>
                         </div>
                     </div>
@@ -562,9 +567,9 @@ $test_data = array(
                 <div class="booking-step booking-step-4" data-step="4">
                     <div class="step-content">
                         <div class="thank-you-content">
-                            <h2 class="thank-you-title">Thank you!</h2>
+                            <h2 class="thank-you-title"><?php echo esc_html(booking_content('success.title')); ?></h2>
                             <p class="thank-you-message">
-                                Your luxury safari inquiry has been submitted successfully. Our team will contact you within 24 hours to discuss your booking.
+                                <?php echo esc_html(booking_content('success.message')); ?>
                             </p>
                         </div>
                     </div>
