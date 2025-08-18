@@ -6,14 +6,14 @@ A comprehensive WordPress custom booking system designed specifically for Leobo 
 
 ## 🌟 Features
 
-### **🚀 LATEST: Smart Blocked Date Management (v3.9.4)**
+### **🚀 LATEST: Smart Blocked Date Management (v1.0.0)**
 - ✨ **Intelligent Consecutive Periods** - Last day of blocked periods available for check-in
 - ✨ **Safari Lodge Logic** - Matches real-world operations (morning checkout, evening arrival)
 - ✨ **Optimized API Calls** - 92% reduction in API requests (single-call architecture)
 - ✨ **Timezone-Safe Calendar** - Accurate date display regardless of user timezone
 - ✨ **Priority Date Logic** - Blocked dates properly override past/future classification
 
-### **🎨 LATEST: Enhanced UI/UX (v3.9.4)**
+### **🎨 LATEST: Enhanced UI/UX (v1.0.0)**
 - ✨ **Improved Transfer Options** - Radio button interface with proper data handling
 - ✨ **Consistent Form Styling** - Unified dropdown and form element design
 - ✨ **Enhanced Sidebar** - Professional cost breakdown with visual hierarchy
