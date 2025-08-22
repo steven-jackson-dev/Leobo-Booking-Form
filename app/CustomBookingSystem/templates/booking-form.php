@@ -141,7 +141,6 @@ $test_data = array(
                                                 <span class="date-value" id="departure-display"><?php echo esc_html(booking_content('fields.select_date')); ?></span>
                                             </div>
                                         </div>
-                                        <div class="date-picker-icon">📅</div>
                                     </div>
                                     
                                     <!-- Calendar Widget -->
@@ -177,11 +176,33 @@ $test_data = array(
                                     <span id="nights-count"></span>
                                 </div>
                                 
-                                <div class="date-availability-notice">
-                                    📅 Different colors indicate seasonal pricing: <span style="color: #4caf50;">Green (Standard)</span>, <span style="color: #ff8f00;">Orange (Peak)</span>, <span style="color: #dc267f;">Pink (Christmas)</span>. Legend shows below calendar.
+                             
+                                <!-- Hidden inputs for form submission -->
+                                <input type="hidden" id="arrival-date" name="checkin_date" value="<?php echo $is_test_mode ? esc_attr($test_data['checkin_date']) : date('Y-m-d', strtotime('+7 days')); ?>" />
+                                <input type="hidden" id="departure-date" name="checkout_date" value="<?php echo $is_test_mode ? esc_attr($test_data['checkout_date']) : date('Y-m-d', strtotime('+10 days')); ?>" />
+                            </div>
+                        </div>
+
+                        
+                           <div class="guests-included-grid">
+                            <div class="form-section guests-section">
+                               <div class="date-flexible-option">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="flexible-dates" name="flexible_dates" />
+                                        <span class="checkmark"></span>
+                                        My dates are flexible
+                                    </label>
                                 </div>
-                                
-                                <div class="date-flexible-option">
+                                 </div>
+                                 </div>
+
+
+                        <!-- Guests and What's Included Grid -->
+                        <div class="guests-included-grid">
+                            <!-- Guest Section -->
+                            <div class="form-section guests-section">
+
+                               <div class="date-flexible-option">
                                     <label class="checkbox-label">
                                         <input type="checkbox" id="flexible-dates" name="flexible_dates" />
                                         <span class="checkmark"></span>
@@ -189,16 +210,6 @@ $test_data = array(
                                     </label>
                                 </div>
                                 
-                                <!-- Hidden inputs for form submission -->
-                                <input type="hidden" id="arrival-date" name="checkin_date" value="<?php echo $is_test_mode ? esc_attr($test_data['checkin_date']) : date('Y-m-d', strtotime('+7 days')); ?>" />
-                                <input type="hidden" id="departure-date" name="checkout_date" value="<?php echo $is_test_mode ? esc_attr($test_data['checkout_date']) : date('Y-m-d', strtotime('+10 days')); ?>" />
-                            </div>
-                        </div>
-
-                        <!-- Guests and What's Included Grid -->
-                        <div class="guests-included-grid">
-                            <!-- Guest Section -->
-                            <div class="form-section guests-section">
                                 
                                 <!-- Adults -->
                                 <div class="guest-type-row">
@@ -371,7 +382,7 @@ $test_data = array(
                                     </label>
                                 </div>
                                 
-                                <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-left: 4px solid #2196f3; font-size: 14px;">
+                                <div style="margin-top: 15px; padding: 10px; font-size: 14px;">
                                     <strong>Additional flying time:</strong> R 38,500 per hour available upon request
                                 </div>
                             </div>
@@ -455,7 +466,8 @@ $test_data = array(
                         <div class="form-section">
                             <h3 class="section-title"><?php echo strtoupper(booking_content('sections.guest_info')); ?></h3>
                             
-                            <div class="form-fields">
+                            <!-- First Grid: Personal Details -->
+                            <div class="form-fields-grid">
                                 <div class="form-field">
                                     <input type="text" id="full-name" name="full_name" placeholder="<?php echo esc_attr(booking_content('fields.full_name')); ?>" 
                                            value="<?php echo $is_test_mode ? esc_attr($test_data['full_name']) : ''; ?>" required />
@@ -470,7 +482,7 @@ $test_data = array(
                                     <input type="tel" id="contact-number" name="contact_number" placeholder="<?php echo esc_attr(booking_content('fields.contact_number')); ?>" 
                                            value="<?php echo $is_test_mode ? esc_attr($test_data['contact_number']) : ''; ?>" required />
                                 </div>
-                                
+          
                                 <div class="form-field">
                                     <input type="text" id="home-address" name="home_address" placeholder="<?php echo esc_attr(booking_content('fields.home_address')); ?>" 
                                            value="<?php echo $is_test_mode ? esc_attr($test_data['home_address']) : ''; ?>" />
@@ -609,13 +621,13 @@ $test_data = array(
                     <h4 class="summary-title">GUESTS</h4>
                     <div class="guest-summary">
                         <div class="guest-item">
-                            <span class="guest-count" id="sidebar-adults">-</span> adults
+                            <span class="guest-count" id="sidebar-adults">0</span> x adults
                         </div>
                         <div class="guest-item">
-                            <span class="guest-count" id="sidebar-children">-</span> children (4+)
+                            <span class="guest-count" id="sidebar-children">0</span> x children (4+)
                         </div>
                         <div class="guest-item">
-                            <span class="guest-count" id="sidebar-babies">-</span> babies (0-3)
+                            <span class="guest-count" id="sidebar-babies">0</span> x babies (0-3)
                         </div>
                     </div>
                 </div>
@@ -715,7 +727,6 @@ $test_data = array(
                             <span class="breakdown-item-detail"></span>
                             <span class="breakdown-item-amount" id="breakdown-experiences-amount">R 0</span>
                         </div>
-                        <div class="breakdown-divider"></div>
                         <div class="breakdown-subtotal">
                             <span class="breakdown-subtotal-label">Subtotal</span>
                             <span class="breakdown-subtotal-amount" id="breakdown-subtotal-amount">R 0</span>
@@ -724,12 +735,12 @@ $test_data = array(
                 </div>
 
                 <!-- Total Costs (Step 2+) -->
-                <div class="summary-section total-costs" style="display: none;">
+                <!-- <div class="summary-section total-costs" style="display: none;">
                     <h4 class="summary-title">TOTAL COSTS</h4>
                     <div class="total-price-display">
                         <div class="price-amount total" id="total-price">R 144,500</div>
                     </div>
-                </div>
+                </div> -->
                 
             </div>
         </div>

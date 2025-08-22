@@ -976,10 +976,10 @@ class LeoboBookingForm {
             sidebarAdults.textContent = this.formData.guests.adults;
         }
         if (sidebarChildren) {
-            sidebarChildren.textContent = this.formData.guests.children > 0 ? this.formData.guests.children : '-';
+            sidebarChildren.textContent = this.formData.guests.children > 0 ? this.formData.guests.children : '0';
         }
         if (sidebarBabies) {
-            sidebarBabies.textContent = this.formData.guests.babies > 0 ? this.formData.guests.babies : '-';
+            sidebarBabies.textContent = this.formData.guests.babies > 0 ? this.formData.guests.babies : '0';
         }
         
         // Update dates

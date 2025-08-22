@@ -22,7 +22,7 @@
     --text-primary: #ffffff;
     --text-secondary: #cccccc;
     --text-muted: #999999;
-    --border-color: #404040;
+    --border-color: #ffffff1a;
     --input-bg: #2d2d2d;
     --button-primary: var(--leobo-gold);
     --button-primary-hover: #c7a885;
@@ -126,8 +126,8 @@
 
 .booking-main-content {
     flex: 1;
-    padding: var(--spacing-xl);
-    background: var(--background-medium);
+    padding: 40px !important;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .booking-sidebar {
@@ -135,7 +135,7 @@
     background: var(--background-dark);
     padding: var(--spacing-xl);
     border-left: 1px solid var(--border-color);
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+    /* box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2); */
 }
 
 /* ====================
@@ -192,6 +192,7 @@
     padding: var(--spacing-lg);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
+    height: fit-content;
 }
 
 .guests-included-grid .included-section {
@@ -203,7 +204,7 @@
 
 .section-title {
     font-size: var(--font-size-lg);
-    font-weight: 600;
+    
     color: var(--text-primary);
     margin: 0 0 var(--spacing-lg) 0;
     text-transform: uppercase;
@@ -233,7 +234,7 @@
 
 .date-picker-trigger {
     background: var(--input-bg);
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: var(--spacing-lg);
     cursor: pointer;
@@ -257,13 +258,13 @@
     align-items: center;
     gap: var(--spacing-lg);
     flex: 1;
+    justify-content: center;
 }
 
 .arrival-display,
 .departure-display {
     display: flex;
     flex-direction: column;
-    min-width: 120px;
 }
 
 .date-label {
@@ -301,7 +302,7 @@
 /* Calendar Widget */
 .calendar-widget {
     position: absolute;
-    top: 100%;
+    top: 50%;
     left: 0;
     right: 0;
     background: var(--background-medium);
@@ -311,6 +312,7 @@
     z-index: 1000;
     margin-top: 4px;
     animation: slideDown 0.2s ease-out;
+    width: 50%;
 }
 
 @keyframes slideDown {
@@ -353,7 +355,7 @@
 .calendar-title {
     color: var(--text-primary);
     font-size: var(--font-size-lg);
-    font-weight: 600;
+    
     text-align: center;
     flex: 1;
 }
@@ -372,7 +374,7 @@
 .weekday {
     text-align: center;
     font-size: var(--font-size-xs);
-    font-weight: 600;
+    
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -487,7 +489,7 @@
 .calendar-day.selected {
     background: var(--leobo-gold) !important;
     color: var(--leobo-dark-brown) !important;
-    font-weight: 700;
+    
     border: 2px solid var(--leobo-gold);
 }
 
@@ -500,7 +502,7 @@
 .calendar-day.range-end {
     background: var(--leobo-gold);
     color: var(--leobo-dark-brown);
-    font-weight: 700;
+    
 }
 
 .calendar-footer {
@@ -534,7 +536,7 @@
 .legend-title {
     color: var(--text-primary);
     font-size: var(--font-size-sm);
-    font-weight: 600;
+    
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: var(--spacing-sm);
@@ -623,7 +625,7 @@
 }
 
 .nights-count {
-    font-weight: 600;
+    
 }
 
 .date-availability-notice {
@@ -760,16 +762,12 @@
 }
 
 .date-flexible-option {
-    margin-top: var(--spacing-md);
+    /* margin-top: var(--spacing-md); */
 }
 
 /* ====================
    GUEST COUNTERS
    ==================== */
-
-.guests-section {
-    margin-top: var(--spacing-xl);
-}
 
 .guest-type-row {
     display: flex;
@@ -803,7 +801,7 @@
     background: transparent;
     color: var(--text-primary);
     font-size: var(--font-size-lg);
-    font-weight: 600;
+    
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -823,7 +821,7 @@
 
 .counter-value {
     font-size: var(--font-size-lg);
-    font-weight: 600;
+    
     color: var(--text-primary);
     min-width: 30px;
     text-align: center;
@@ -833,10 +831,6 @@
    INCLUDED FEATURES
    ==================== */
 
-.included-section {
-    margin-top: var(--spacing-xl);
-}
-
 .included-list {
     list-style: none;
     padding: 0;
@@ -845,7 +839,7 @@
 
 .included-list li {
     position: relative;
-    padding: var(--spacing-sm) 0;
+    padding: 2px;
     padding-left: var(--spacing-lg);
     color: var(--text-secondary);
     font-size: var(--font-size-sm);
@@ -868,6 +862,21 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
+}
+
+/* Grid layout for compact form sections */
+.form-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+    .form-fields-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
 }
 
 .form-field {
@@ -916,7 +925,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    padding: var(--spacing-md) 0;
+    padding: 5px 0;
     color: var(--text-primary);
     font-size: var(--font-size-base);
     cursor: pointer;
@@ -1074,7 +1083,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     border: none;
     border-radius: var(--border-radius);
     font-size: var(--font-size-base);
-    font-weight: 600;
+    
     text-transform: uppercase;
     letter-spacing: 0.5px;
     cursor: pointer;
@@ -1140,13 +1149,13 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .summary-title {
     font-size: var(--font-size-sm);
-    font-weight: 700;
+    
     color: var(--leobo-gold);
     text-transform: uppercase;
     letter-spacing: 1.2px;
     margin: 0 0 var(--spacing-md) 0;
     padding-bottom: var(--spacing-sm);
-    border-bottom: 2px solid rgba(212, 184, 150, 0.3);
+    /* border-bottom: 2px solid rgba(212, 184, 150, 0.3); */
     text-align: center;
     position: relative;
 }
@@ -1154,6 +1163,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .summary-title::after {
     content: '';
     position: absolute;
+    display: none;
     bottom: -2px;
     left: 50%;
     transform: translateX(-50%);
@@ -1174,7 +1184,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .guest-count {
-    font-weight: 600;
+    
     color: var(--leobo-gold);
 }
 
@@ -1242,15 +1252,15 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .price-display,
 .total-price-display {
-    text-align: center;
-    padding: var(--spacing-lg);
-    background: rgba(212, 184, 150, 0.15);
-    border: 2px solid rgba(212, 184, 150, 0.4);
-    border-radius: var(--border-radius);
-    margin-top: var(--spacing-lg);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    position: relative;
-    overflow: hidden;
+    /* text-align: center; */
+    /* padding: var(--spacing-lg); */
+    /* background: rgba(212, 184, 150, 0.15); */
+    /* border: 2px solid rgba(212, 184, 150, 0.4); */
+    /* border-radius: var(--border-radius); */
+    /* margin-top: var(--spacing-lg); */
+    /* box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); */
+    /* position: relative; */
+    /* overflow: hidden; */
 }
 
 .total-price-display {
@@ -1276,10 +1286,9 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .price-amount {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
+    font-size: 16px;
     color: var(--leobo-gold);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    text-align: center;
     margin: 0;
 }
 
@@ -1306,7 +1315,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .breakdown-header {
-    font-weight: 700;
+    
     color: var(--leobo-gold);
     margin-bottom: var(--spacing-lg);
     text-transform: uppercase;
@@ -1328,6 +1337,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .breakdown-item {
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-sm) 0;
@@ -1371,7 +1381,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .breakdown-item-amount {
     color: var(--leobo-gold);
-    font-weight: 600;
+    
     text-align: right;
     min-width: 80px;
     font-size: var(--font-size-sm);
@@ -1390,12 +1400,11 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-md);
-    font-weight: 700;
+    
     color: var(--text-primary);
     border-top: 2px solid var(--leobo-gold);
     margin-top: var(--spacing-lg);
     background: rgba(212, 184, 150, 0.05);
-    border-radius: var(--border-radius);
     margin-left: calc(var(--spacing-lg) * -1);
     margin-right: calc(var(--spacing-lg) * -1);
     margin-bottom: calc(var(--spacing-lg) * -1);
@@ -1407,13 +1416,13 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     text-transform: uppercase;
     font-size: var(--font-size-sm);
     letter-spacing: 0.8px;
-    font-weight: 700;
+    
 }
 
 .breakdown-subtotal-amount {
     color: var(--leobo-gold);
     font-size: var(--font-size-lg);
-    font-weight: 700;
+    
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
@@ -1455,6 +1464,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     margin-bottom: var(--spacing-sm);
     flex-wrap: wrap;
     gap: var(--spacing-xs);
+    gap: 10px;
 }
 
 .season-badge {
@@ -1464,7 +1474,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     color: var(--leobo-dark-brown);
     border-radius: 20px;
     font-size: var(--font-size-xs);
-    font-weight: 600;
+    
     text-transform: uppercase;
     letter-spacing: 0.5px;
     flex-shrink: 0;
@@ -1507,10 +1517,12 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 /* Nightly Breakdown Toggle */
 .breakdown-nightly-header {
-    display: flex;
+   display: flex;
+    gap: 10px;
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-sm);
+    flex-direction: column;
 }
 
 .nightly-title {
@@ -1553,8 +1565,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .nightly-item {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
+   display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: var(--spacing-xs);
     align-items: center;
     padding: var(--spacing-sm) 0;
@@ -1562,6 +1574,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     font-size: var(--font-size-xs);
     width: 100%;
     box-sizing: border-box;
+    justify-items: center;
+    justify-content: space-evenly;
 }
 
 .nightly-item:last-child {
@@ -1580,12 +1594,13 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     padding: 3px 6px;
     border-radius: 12px;
     font-size: 10px;
-    font-weight: 700;
+    
     text-transform: uppercase;
     letter-spacing: 0.5px;
     min-width: 18px;
     text-align: center;
     flex-shrink: 0;
+    max-width: 20px;
 }
 
 .nightly-season.standard {
@@ -1605,7 +1620,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .nightly-rate {
     color: var(--leobo-gold);
-    font-weight: 600;
+    
     text-align: right;
     white-space: nowrap;
     font-size: var(--font-size-xs);
@@ -1616,7 +1631,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     margin-left: 4px;
     color: #e91e63;
     font-size: 10px;
-    font-weight: 600;
+    
 }
 
 /* Enhanced breakdown items */
@@ -1771,7 +1786,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     }
     
     .summary-section:last-child {
-        border-right: none;
+        /* border-right: none; */
         margin-right: 0;
     }
 }
@@ -1832,7 +1847,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
         display: block;
         margin-right: 0;
         padding-right: 0;
-        border-right: none;
+        /* border-right: none; */
         border-bottom: 1px solid var(--border-color);
         margin-bottom: var(--spacing-lg);
     }
@@ -1862,7 +1877,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     
     /* Stack guests and included sections on mobile */
     .guests-included-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: var(--spacing-lg);
     }
     
@@ -1882,7 +1897,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     .breakdown-item-amount {
         align-self: flex-end;
         font-size: var(--font-size-base);
-        font-weight: 700;
+        
     }
     
     .breakdown-item-detail {
@@ -1926,24 +1941,14 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     .summary-section {
         display: block;
         margin-right: 0;
-        padding-right: 0;
-        border-right: none;
+        /* border-right: none; */
         border-bottom: 1px solid var(--border-color);
-    }
-    
-    .step-navigation {
-        flex-direction: column;
     }
     
     .btn {
         width: 100%;
     }
-    
-    /* Stack guests and included sections on mobile */
-    .guests-included-grid {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
-    }
+  
 
 @media (max-width: 480px) {
     /* Extra small screens - phones in portrait */
@@ -2189,7 +2194,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .datepicker__topbar-selected {
     color: var(--leobo-gold);
-    font-weight: 600;
+    
 }
 
 .datepicker__months {
@@ -2223,7 +2228,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .datepicker__month-name {
     color: var(--text-primary);
-    font-weight: 600;
+    
     font-size: var(--font-size-lg);
 }
 
@@ -2254,7 +2259,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .datepicker__month-day--selected {
     background: var(--leobo-gold) !important;
     color: var(--background-dark) !important;
-    font-weight: 600;
+    
 }
 
 .datepicker__month-day--first-day-selected,
@@ -2312,7 +2317,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     border: none;
     border-radius: var(--border-radius-sm);
     padding: var(--spacing-sm) var(--spacing-lg);
-    font-weight: 600;
+    
     transition: all 0.2s ease;
 }
 
@@ -2414,7 +2419,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .package-title {
-    font-weight: 600;
+    
     font-size: var(--font-size-base);
     color: var(--text-primary);
 }
@@ -2426,7 +2431,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .package-price {
     font-size: var(--font-size-lg);
-    font-weight: 700;
+    
     color: var(--leobo-gold);
     margin-top: 4px;
 }
