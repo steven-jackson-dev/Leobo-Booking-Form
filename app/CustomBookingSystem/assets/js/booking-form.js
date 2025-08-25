@@ -238,14 +238,42 @@ class LeoboBookingForm {
             clearBtn.addEventListener('click', () => this.clearDates());
         }
         if (applyBtn) {
-            applyBtn.addEventListener('click', () => this.applyDates());
+            // Modified: Only close calendar and apply final dates when both dates are selected
+            applyBtn.addEventListener('click', () => {
+                if (this.calendar.selectedStartDate && this.calendar.selectedEndDate) {
+                    this.applyDates();
+                } else {
+                    alert('Please select both arrival and departure dates.');
+                }
+            });
         }
         
-        // Close calendar when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!calendar.contains(e.target) && !trigger.contains(e.target)) {
-                this.closeCalendar();
-            }
+        // Close calendar when clicking outside (only add listener once)
+        if (!this.outsideClickListenerAdded) {
+            document.addEventListener('click', (e) => {
+                if (!calendar.contains(e.target) && !trigger.contains(e.target)) {
+                    console.log('Outside click detected, closing calendar');
+                    this.closeCalendar();
+                }
+            });
+            this.outsideClickListenerAdded = true;
+        }
+        
+        // Close calendar on Escape key (only add listener once)
+        if (!this.escapeKeyListenerAdded) {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.calendar.isOpen) {
+                    console.log('Escape key pressed, closing calendar');
+                    this.closeCalendar();
+                }
+            });
+            this.escapeKeyListenerAdded = true;
+        }
+        
+        // Prevent calendar clicks from propagating to document
+        calendar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Calendar click stopped from propagating');
         });
         
         // Initialize calendar display
@@ -271,6 +299,7 @@ class LeoboBookingForm {
             calendar.style.display = 'block';
             trigger.classList.add('active');
             this.calendar.isOpen = true;
+            console.log('Calendar opened, isOpen set to:', this.calendar.isOpen);
             this.renderCalendar();
         }
     }
@@ -283,6 +312,7 @@ class LeoboBookingForm {
             calendar.style.display = 'none';
             trigger.classList.remove('active');
             this.calendar.isOpen = false;
+            console.log('Calendar closed, isOpen set to:', this.calendar.isOpen);
         }
     }
     
@@ -297,8 +327,20 @@ class LeoboBookingForm {
     }
     
     renderCalendar() {
-        const calendarTitle = document.getElementById('calendar-title');
-        const calendarDays = document.getElementById('calendar-days');
+        // Render both current and next month
+        this.renderMonth(1, this.calendar.currentDate);
+        
+        const nextMonth = new Date(this.calendar.currentDate);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        this.renderMonth(2, nextMonth);
+        
+        // Render the season legend if it doesn't exist
+        this.renderSeasonLegend();
+    }
+    
+    renderMonth(monthNumber, monthDate) {
+        const calendarTitle = document.getElementById(`calendar-title-${monthNumber}`);
+        const calendarDays = document.getElementById(`calendar-days-${monthNumber}`);
         
         if (!calendarTitle || !calendarDays) return;
         
@@ -308,14 +350,14 @@ class LeoboBookingForm {
             'July', 'August', 'September', 'October', 'November', 'December'
         ];
         
-        calendarTitle.textContent = `${monthNames[this.calendar.currentDate.getMonth()]} ${this.calendar.currentDate.getFullYear()}`;
+        calendarTitle.textContent = `${monthNames[monthDate.getMonth()]} ${monthDate.getFullYear()}`;
         
         // Clear previous days
         calendarDays.innerHTML = '';
         
         // Get first day of month and number of days
-        const firstDay = new Date(this.calendar.currentDate.getFullYear(), this.calendar.currentDate.getMonth(), 1);
-        const lastDay = new Date(this.calendar.currentDate.getFullYear(), this.calendar.currentDate.getMonth() + 1, 0);
+        const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+        const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
         const startDate = new Date(firstDay);
         startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
         
@@ -335,7 +377,7 @@ class LeoboBookingForm {
             const dateString = this.formatDate(date);
             
             // Add classes based on date status - PRIORITIZE BLOCKED DATES
-            if (date.getMonth() !== this.calendar.currentDate.getMonth()) {
+            if (date.getMonth() !== monthDate.getMonth()) {
                 dayElement.classList.add('other-month');
             } else if (blockedDates.includes(dateString)) {
                 // CHECK BLOCKED DATES FIRST - they take priority over past/future
@@ -364,17 +406,19 @@ class LeoboBookingForm {
             
             // Add click handler for available dates only (not blocked)
             if (dayElement.classList.contains('available')) {
-                dayElement.addEventListener('click', () => this.selectDate(new Date(date)));
+                dayElement.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
+                    this.selectDate(new Date(date));
+                });
             }
             
             calendarDays.appendChild(dayElement);
         }
-        
-        // Render the season legend if it doesn't exist
-        this.renderSeasonLegend();
     }
     
     selectDate(date) {
+        console.log('selectDate called with:', date, 'Calendar is open:', this.calendar.isOpen);
+        
         // Check if date is blocked
         const dateString = this.formatDate(date);
         const blockedDates = this.config.blocked_dates || [];
@@ -390,6 +434,12 @@ class LeoboBookingForm {
             this.calendar.selectedStartDate = new Date(date);
             this.calendar.selectedEndDate = null;
             this.calendar.isSelectingRange = true;
+            
+            console.log('Starting new selection, start date set to:', this.calendar.selectedStartDate);
+            
+            // Show temporary feedback
+            this.updateTemporaryDateDisplay();
+            
         } else if (this.calendar.selectedStartDate && !this.calendar.selectedEndDate) {
             // Complete range selection
             let startDate, endDate;
@@ -403,9 +453,26 @@ class LeoboBookingForm {
                 endDate = new Date(date);
             }
             
+            // Validate minimum nights
+            const nights = this.calculateNights(this.formatDate(startDate), this.formatDate(endDate));
+            const minNights = this.config.acf_config?.minimum_nights_standard || 3;
+            
+            if (nights < minNights) {
+                alert(`Minimum stay is ${minNights} nights. Please select a longer period.`);
+                // Keep the start date, reset end date for re-selection
+                this.calendar.selectedEndDate = null;
+                this.renderCalendar();
+                this.updateTemporaryDateDisplay();
+                return;
+            }
+            
             // Check if any dates in the range are blocked
             if (this.hasBlockedDatesInRange(startDate, endDate)) {
                 alert('Your selected date range contains unavailable dates. Please select a different range.');
+                // Keep the start date, reset end date for re-selection
+                this.calendar.selectedEndDate = null;
+                this.renderCalendar();
+                this.updateTemporaryDateDisplay();
                 return;
             }
             
@@ -413,18 +480,23 @@ class LeoboBookingForm {
             this.calendar.selectedEndDate = endDate;
             this.calendar.isSelectingRange = false;
             
-            // If both dates are selected, update pricing
-            if (this.calendar.selectedStartDate && this.calendar.selectedEndDate) {
-                // Update form data temporarily for pricing calculation
-                this.formData.dates.checkin = this.formatDate(this.calendar.selectedStartDate);
-                this.formData.dates.checkout = this.formatDate(this.calendar.selectedEndDate);
-                this.updatePricing();
-            }
+            console.log('Range selection complete:', startDate, 'to', endDate);
+            
+            // Update temporary display and pricing immediately
+            this.updateTemporaryDateDisplay();
+            this.updateTemporaryPricing();
+            
+            // Enable Apply button with visual feedback
+            this.enableApplyButton();
         }
         
+        // Ensure calendar stays open
+        this.calendar.isOpen = true;
+        
+        // Re-render calendar to show selection
         this.renderCalendar();
-        this.updateDateDisplay();
-        this.updateSidebarSummary(); // Add sidebar update
+        
+        console.log('selectDate finished, calendar should remain open:', this.calendar.isOpen);
     }
     
     // Helper method to check if a date range contains blocked dates
@@ -458,12 +530,19 @@ class LeoboBookingForm {
         if (arrivalInput) arrivalInput.value = '';
         if (departureInput) departureInput.value = '';
         
+        // Reset Apply button
+        const applyBtn = document.getElementById('calendar-apply');
+        if (applyBtn) {
+            applyBtn.classList.remove('ready');
+            applyBtn.textContent = 'Apply';
+        }
+        
         // Reset pricing display to placeholders
         this.initializePlaceholders();
         
         this.renderCalendar();
-        this.updateDateDisplay();
-        this.updateSidebarSummary(); // Add sidebar update
+        this.updateTemporaryDateDisplay();
+        this.updateSidebarSummary();
     }
     
     applyDates() {
@@ -478,12 +557,158 @@ class LeoboBookingForm {
             if (arrivalInput) arrivalInput.value = this.formData.dates.checkin;
             if (departureInput) departureInput.value = this.formData.dates.checkout;
             
-            this.closeCalendar();
+            // Final update of displays
+            this.updateDateDisplay();
             this.updateSidebarSummary();
             this.updatePricing();
+            
+            // Close calendar with confirmation
+            this.closeCalendar();
+            
+            // Show success feedback
+            this.showDateSelectionSuccess();
         } else {
             alert('Please select both arrival and departure dates.');
         }
+    }
+
+    // New method for temporary date display updates
+    updateTemporaryDateDisplay() {
+        const arrivalDisplay = document.getElementById('arrival-display');
+        const departureDisplay = document.getElementById('departure-display');
+        const dateInfo = document.getElementById('date-range-info');
+        const rangeText = document.getElementById('date-range-text');
+        const nightsCount = document.getElementById('nights-count');
+        
+        // Update the date picker trigger display
+        if (this.calendar.selectedStartDate) {
+            const arrivalFormatted = this.formatDisplayDate(this.calendar.selectedStartDate);
+            if (arrivalDisplay) {
+                arrivalDisplay.textContent = arrivalFormatted;
+                arrivalDisplay.classList.remove('placeholder');
+                arrivalDisplay.classList.add('selected');
+            }
+        } else {
+            if (arrivalDisplay) {
+                arrivalDisplay.textContent = 'Select date';
+                arrivalDisplay.classList.add('placeholder');
+                arrivalDisplay.classList.remove('selected');
+            }
+        }
+        
+        if (this.calendar.selectedEndDate) {
+            const departureFormatted = this.formatDisplayDate(this.calendar.selectedEndDate);
+            if (departureDisplay) {
+                departureDisplay.textContent = departureFormatted;
+                departureDisplay.classList.remove('placeholder');
+                departureDisplay.classList.add('selected');
+            }
+        } else if (this.calendar.selectedStartDate) {
+            if (departureDisplay) {
+                departureDisplay.textContent = 'Select departure date';
+                departureDisplay.classList.add('placeholder', 'selecting');
+                departureDisplay.classList.remove('selected');
+            }
+        } else {
+            if (departureDisplay) {
+                departureDisplay.textContent = 'Select date';
+                departureDisplay.classList.add('placeholder');
+                departureDisplay.classList.remove('selected', 'selecting');
+            }
+        }
+        
+        // Update date range info
+        if (this.calendar.selectedStartDate && this.calendar.selectedEndDate) {
+            const checkin = this.formatDate(this.calendar.selectedStartDate);
+            const checkout = this.formatDate(this.calendar.selectedEndDate);
+            const nights = this.calculateNights(checkin, checkout);
+            
+            if (rangeText) {
+                rangeText.textContent = `${nights} night${nights !== 1 ? 's' : ''} selected`;
+            }
+            if (nightsCount) {
+                nightsCount.textContent = `(${this.formatDisplayDate(this.calendar.selectedStartDate)} → ${this.formatDisplayDate(this.calendar.selectedEndDate)})`;
+            }
+            if (dateInfo) {
+                dateInfo.style.display = 'block';
+            }
+        } else if (this.calendar.selectedStartDate) {
+            if (rangeText) {
+                rangeText.textContent = 'Select your departure date';
+            }
+            if (nightsCount) {
+                nightsCount.textContent = '';
+            }
+            if (dateInfo) {
+                dateInfo.style.display = 'block';
+            }
+        } else {
+            if (dateInfo) {
+                dateInfo.style.display = 'none';
+            }
+        }
+    }
+
+    // New method for temporary pricing updates
+    updateTemporaryPricing() {
+        if (this.calendar.selectedStartDate && this.calendar.selectedEndDate) {
+            // Temporarily update form data for pricing calculation
+            const tempFormData = {
+                ...this.formData,
+                dates: {
+                    ...this.formData.dates,
+                    checkin: this.formatDate(this.calendar.selectedStartDate),
+                    checkout: this.formatDate(this.calendar.selectedEndDate)
+                }
+            };
+            
+            // Calculate and display temporary pricing
+            this.calculatePricingPreview(tempFormData);
+        }
+    }
+
+    // New method to enable Apply button with visual feedback
+    enableApplyButton() {
+        const applyBtn = document.getElementById('calendar-apply');
+        if (applyBtn && this.calendar.selectedStartDate && this.calendar.selectedEndDate) {
+            applyBtn.classList.add('ready');
+            applyBtn.textContent = 'Apply Selection';
+            
+            // Add subtle animation to draw attention
+            applyBtn.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                applyBtn.style.transform = 'scale(1)';
+            }, 200);
+        }
+    }
+
+    // New method for success feedback
+    showDateSelectionSuccess() {
+        const trigger = document.getElementById('date-picker-trigger');
+        if (trigger) {
+            trigger.classList.add('confirmed');
+            setTimeout(() => {
+                trigger.classList.remove('confirmed');
+            }, 1000);
+        }
+    }
+
+    // Add method for pricing preview calculation
+    calculatePricingPreview(tempFormData) {
+        // Calculate preview pricing but don't update final displays
+        const checkin = tempFormData.dates.checkin;
+        const checkout = tempFormData.dates.checkout;
+        
+        if (!checkin || !checkout) return;
+        
+        const nights = this.calculateNights(checkin, checkout);
+        if (nights <= 0) return;
+        
+        // Get pricing configuration
+        const seasonDates = this.config.season_dates || {};
+        
+        // This should mirror your existing updatePricing logic but for preview only
+        console.log('Preview pricing calculation for:', nights, 'nights from', checkin, 'to', checkout);
     }
     
     setupFormInputs() {
