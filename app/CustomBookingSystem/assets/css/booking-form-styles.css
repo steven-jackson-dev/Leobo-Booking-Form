@@ -612,7 +612,7 @@
 }
 
 .date-info {
-    background: rgba(218, 165, 32, 0.1);
+    /* background: rgba(218, 165, 32, 0.1);
     border: 1px solid var(--leobo-gold);
     border-radius: var(--border-radius);
     color: var(--leobo-gold);
@@ -623,7 +623,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-md); */
 }
 
 .nights-count {
@@ -1075,7 +1075,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     gap: var(--spacing-md);
     margin-top: var(--spacing-xl);
     padding-top: var(--spacing-xl);
-    border-top: 1px solid var(--border-color);
+    /* border-top: 1px solid var(--border-color); */
 }
 
 .step-navigation .btn:only-child {
@@ -2554,7 +2554,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     z-index: 1000;
     margin-top: 8px;
     animation: calendarSlideDown 0.3s ease;
-    min-width: 600px; /* Ensure enough width for dual months */
+    min-width: 700px; /* Ensure enough width for dual months */
 }
 
 /* Dual calendar container */
@@ -2735,12 +2735,12 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 /* Date range info styling */
 .date-info {
     margin-top: 10px;
-    padding: 10px;
-    background: var(--background-medium);
+    padding: 0 5px;
+    /* background: var(--background-medium);
     border-radius: 6px;
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    text-align: center;
+    font-size: var(--font-size-sm); */
+    /* color: var(--text-secondary); */
+    /* text-align: center; */
 }
 
 #date-range-text {
@@ -2749,8 +2749,9 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 #nights-count {
-    display: block;
+    /* display: block; */
     margin-top: 5px;
+    margin-left: 5px;
     font-size: var(--font-size-xs);
     color: var(--text-muted);
 }
@@ -2860,4 +2861,12 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .date-picker-trigger,
 .calendar-footer .btn {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+.date-picker-container{
+    display: grid;
+    grid-template-columns: 1fr 0.4fr;
+    gap: 40px;
+    align-items: center;
 }
