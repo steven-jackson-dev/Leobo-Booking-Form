@@ -19,7 +19,7 @@
     --background-dark: #1a1a1a;
     --background-medium: rgb(44, 31, 33);
     --background-light: #3a3a3a;
-    --text-primary: #ffffff;
+    --text-primary: #EED1C0;
     --text-secondary: #cccccc;
     --text-muted: #999999;
     --border-color: #ffffff1a;
@@ -177,7 +177,7 @@
 /* Guests and Included Grid Layout */
 .guests-included-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: var(--spacing-xl);
     margin-bottom: var(--spacing-xl);
 }
@@ -193,6 +193,8 @@
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     height: fit-content;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
 }
 
 .guests-included-grid .included-section {
@@ -306,7 +308,7 @@
     left: 0;
     right: 0;
     background: var(--background-medium);
-    border: 2px solid var(--leobo-gold);
+    border: 1px solid var(--leobo-gold);
     border-radius: var(--border-radius);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 1000;
@@ -490,7 +492,7 @@
     background: var(--leobo-gold) !important;
     color: var(--leobo-dark-brown) !important;
     
-    border: 2px solid var(--leobo-gold);
+    border: 1px solid var(--leobo-gold);
 }
 
 .calendar-day.in-range {
@@ -771,6 +773,8 @@
 
 .guest-type-row {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-lg) 0;
@@ -796,7 +800,7 @@
 .counter-btn {
     width: 40px;
     height: 40px;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: 50%;
     background: transparent;
     color: var(--text-primary);
@@ -888,7 +892,7 @@
 .form-field select {
     width: 100%;
     background: var(--input-bg);
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: var(--spacing-lg);
     color: var(--text-primary);
@@ -953,7 +957,7 @@
 .radio-mark {
     width: 20px;
     height: 20px;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     position: relative;
     transition: all 0.3s ease;
@@ -1017,7 +1021,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .select-wrapper select {
     width: 100%;
     background: var(--input-bg);
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: var(--spacing-lg);
     color: var(--text-primary);
@@ -1098,7 +1102,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .btn-primary {
     background: transparent;
     color: var(--text-primary);
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
 }
 
 .btn-primary:hover {
@@ -1109,7 +1113,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .btn-secondary {
     background: transparent;
     color: var(--text-primary);
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
@@ -1255,7 +1259,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     /* text-align: center; */
     /* padding: var(--spacing-lg); */
     /* background: rgba(212, 184, 150, 0.15); */
-    /* border: 2px solid rgba(212, 184, 150, 0.4); */
+    /* border: 1px solid rgba(212, 184, 150, 0.4); */
     /* border-radius: var(--border-radius); */
     /* margin-top: var(--spacing-lg); */
     /* box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); */
@@ -2382,7 +2386,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     display: flex;
     align-items: flex-start;
     background: var(--input-bg);
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: 15px;
     cursor: pointer;
@@ -2479,7 +2483,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 /* Enhanced date picker trigger */
 .date-picker-trigger {
     cursor: pointer;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: var(--spacing-lg);
     background: var(--input-bg);
@@ -2837,7 +2841,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .calendar-day.today {
     background: var(--background-medium);
-    border: 2px solid var(--leobo-gold);
+    border: 1px solid var(--leobo-gold);
     font-weight: 600;
 }
 

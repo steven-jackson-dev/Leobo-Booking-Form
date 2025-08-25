@@ -142,6 +142,14 @@ $test_data = array(
                                             </div>
                                         </div>
                                     </div>
+
+                                     <div class="date-flexible-option">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="flexible-dates" name="flexible_dates" />
+                                        <span class="checkmark"></span>
+                                        My dates are flexible
+                                    </label>
+                                </div>
                                     
                                     <!-- Calendar Widget -->
                                     <div class="calendar-widget" id="calendar-widget" style="display: none;">
@@ -212,7 +220,7 @@ $test_data = array(
                             </div>
                         </div>
 
-                        
+<!--                         
                            <div class="guests-included-grid">
                             <div class="form-section guests-section">
                                <div class="date-flexible-option">
@@ -223,21 +231,21 @@ $test_data = array(
                                     </label>
                                 </div>
                                  </div>
-                                 </div>
+                                 </div> -->
 
 
                         <!-- Guests and What's Included Grid -->
                         <div class="guests-included-grid">
                             <!-- Guest Section -->
                             <div class="form-section guests-section">
-
+<!-- 
                                <div class="date-flexible-option">
                                     <label class="checkbox-label">
                                         <input type="checkbox" id="flexible-dates" name="flexible_dates" />
                                         <span class="checkmark"></span>
                                         My dates are flexible
                                     </label>
-                                </div>
+                                </div> -->
                                 
                                 
                                 <!-- Adults -->
