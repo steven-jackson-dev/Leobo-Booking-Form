@@ -1129,16 +1129,15 @@ class LeoboBookingForm {
         let legend = document.getElementById('season-legend');
         if (legend) return;
         
-        // Find the calendar widget to add legend after
-        const calendarWidget = document.getElementById('calendar-widget');
-        if (!calendarWidget) return;
+        // Find the calendar footer to insert legend before it
+        const calendarFooter = document.querySelector('#calendar-widget .calendar-footer');
+        if (!calendarFooter) return;
         
         // Create legend element
         legend = document.createElement('div');
         legend.id = 'season-legend';
         legend.className = 'season-legend';
         legend.innerHTML = `
-            <div class="legend-title">Calendar Legend</div>
             <div class="legend-items">
                 <div class="legend-item">
                     <div class="legend-color season-standard"></div>
@@ -1159,8 +1158,8 @@ class LeoboBookingForm {
             </div>
         `;
         
-        // Insert after calendar widget
-        calendarWidget.parentNode.insertBefore(legend, calendarWidget.nextSibling);
+        // Insert before calendar footer (inside the calendar widget)
+        calendarFooter.parentNode.insertBefore(legend, calendarFooter);
     }
 
     
