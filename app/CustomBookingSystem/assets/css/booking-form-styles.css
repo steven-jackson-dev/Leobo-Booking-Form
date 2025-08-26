@@ -68,6 +68,11 @@
    HEADER PROGRESS BAR
    ==================== */
 
+   .page-header {
+        margin: 50px 0;
+        text-align: center;
+   }
+
 .booking-header-progress {
     display: flex;
     justify-content: center;
@@ -206,11 +211,18 @@
 
 .section-title {
     font-size: var(--font-size-lg);
-    
     color: var(--text-primary);
     margin: 0 0 var(--spacing-lg) 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.booking-step.booking-step-2 .section-title {
+    margin-top: 60px !important;
+}
+
+.booking-step.booking-step-4 {
+    margin-top: 10%;
 }
 
 .section-subtitle {
@@ -458,7 +470,7 @@
 .calendar-day.season-standard {
     background: rgba(76, 175, 80, 0.15) !important;
     border-color: rgba(76, 175, 80, 0.4) !important;
-    color: #4caf50 !important;
+    color: #65b15f !important;
 }
 
 .calendar-day.season-standard:hover {
@@ -569,7 +581,7 @@
 
 .legend-color.season-standard {
     background: rgba(76, 175, 80, 0.6);
-    border-color: #4caf50;
+    border-color: #65b15f;
 }
 
 .legend-color.season-peak {
@@ -928,7 +940,7 @@
 .experience-option {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: 10px;
     padding: 5px 0;
     color: var(--text-primary);
     font-size: var(--font-size-base);
@@ -1000,8 +1012,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 .radio-group,
 .experiences-grid {
     display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
+    /* flex-direction: column; */
+    gap: 40px;
 }
 
 .experiences-grid {
@@ -1159,7 +1171,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     letter-spacing: 1.2px;
     margin: 0 0 var(--spacing-md) 0;
     padding-bottom: var(--spacing-sm);
-    /* border-bottom: 2px solid rgba(212, 184, 150, 0.3); */
+    border-bottom: 1px solid rgba(212, 184, 150, 0.3);
     text-align: center;
     position: relative;
 }
@@ -1230,28 +1242,28 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 /* Season-specific styling */
 .season-info.christmas {
-    background: rgba(220, 38, 127, 0.15);
+    /* background: rgba(220, 38, 127, 0.15); */
     color: #dc267f;
-    border: 1px solid rgba(220, 38, 127, 0.3);
+    /* border: 1px solid rgba(220, 38, 127, 0.3); */
 }
 
 .season-info.peak {
-    background: rgba(255, 193, 7, 0.15);
+    /* background: rgba(255, 193, 7, 0.15); */
     color: #ff8f00;
-    border: 1px solid rgba(255, 193, 7, 0.3);
+    /* border: 1px solid rgba(255, 193, 7, 0.3); */
 }
 
 .season-info.standard {
-    background: rgba(76, 175, 80, 0.15);
+    /* background: rgba(76, 175, 80, 0.15); */
     color: #388e3c;
-    border: 1px solid rgba(76, 175, 80, 0.3);
+    /* border: 1px solid rgba(76, 175, 80, 0.3); */
 }
 
 /* Mixed seasons styling */
 .season-info.mixed {
-    background: rgba(156, 39, 176, 0.15);
+    /* background: rgba(156, 39, 176, 0.15); */
     color: #7b1fa2;
-    border: 1px solid rgba(156, 39, 176, 0.3);
+    /* border: 1px solid rgba(156, 39, 176, 0.3); */
 }
 
 .price-display,
@@ -1326,7 +1338,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     font-size: var(--font-size-sm);
     letter-spacing: 1px;
     padding-bottom: var(--spacing-sm);
-    border-bottom: 2px solid rgba(212, 184, 150, 0.4);
+    border-bottom: 1px solid rgba(212, 184, 150, 0.4);
     text-align: center;
 }
 
@@ -1609,7 +1621,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 
 .nightly-season.standard {
     background: rgba(76, 175, 80, 0.3);
-    color: #4caf50;
+    color: #65b15f;
 }
 
 .nightly-season.peak {
@@ -1939,7 +1951,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     }
     
     .experiences-grid {
-        grid-template-columns: 1fr;
+        /* grid-template-columns: 1fr; */
     }
     
     .summary-section {
@@ -2497,8 +2509,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .date-picker-trigger.confirmed {
-    border-color: #28a745;
-    background: linear-gradient(45deg, #28a745, #20c997);
+    border-color: #65b15f;
+    background: #65b15f;
     color: white;
     animation: confirmPulse 1s ease;
 }
@@ -2522,7 +2534,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .date-value.selected {
-    color: var(--leobo-gold);
+    /* color: var(--leobo-gold); */
+    color: var(--text-secondary);
     font-weight: 600;
 }
 
@@ -2722,8 +2735,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 #calendar-apply.ready {
-    background: linear-gradient(45deg, #28a745, #20c997);
-    border-color: #28a745;
+    background: #65b15f;
+    border-color: #65b15f;
     animation: readyPulse 2s infinite;
 }
 
@@ -2869,4 +2882,8 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
     grid-template-columns: 1fr 0.4fr;
     gap: 40px;
     align-items: center;
+}
+
+.transfer-options-container .radio-option{
+    gap: 5px;
 }

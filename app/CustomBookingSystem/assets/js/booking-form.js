@@ -1498,19 +1498,28 @@ class LeoboBookingForm {
         
         const checkinFormatted = checkinDate.toLocaleDateString('en-GB', { 
             day: 'numeric', 
-            month: 'short' 
+            month: 'short',
+            year: 'numeric'
         });
         const checkoutFormatted = checkoutDate.toLocaleDateString('en-GB', { 
             day: 'numeric', 
-            month: 'short' 
+            month: 'short',
+            year: 'numeric'
         });
         
         const nights = this.formData.pricing.nights || Math.ceil((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24));
         
+        // Update HTML while preserving season-info structure
         datesSummary.innerHTML = `
             <div class="date-range">${checkinFormatted} - ${checkoutFormatted}</div>
             <div class="nights-count">(${nights} nights)</div>
+            <div class="season-info" id="season-info" style="display: none;">
+                <span class="season-label" id="season-display"></span>
+            </div>
         `;
+        
+        // Update season information if pricing data is available
+        this.updateSeasonDisplay();
     }
     
     updatePricingDisplay() {
@@ -1733,8 +1742,8 @@ class LeoboBookingForm {
             if (seasonDates && this.formData.dates.checkin && this.formData.dates.checkout) {
                 const checkinDate = new Date(this.formData.dates.checkin);
                 const checkoutDate = new Date(this.formData.dates.checkout);
-                const checkinStr = checkinDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-                const checkoutStr = checkoutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                const checkinStr = checkinDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                const checkoutStr = checkoutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
                 seasonDates.textContent = `${checkinStr} - ${checkoutStr}`;
             }
             
@@ -1772,7 +1781,8 @@ class LeoboBookingForm {
             const dateStr = nightDate.toLocaleDateString('en-GB', { 
                 weekday: 'short', 
                 day: 'numeric', 
-                month: 'short' 
+                month: 'short',
+                year: 'numeric'
             });
             
             const nightlyItem = document.createElement('div');

@@ -303,11 +303,11 @@ return array(
     // Step 5: Thank You
     'step_thank_you' => array(
         'title' => 'Thank you!',
-        'message' => 'Your luxury safari inquiry has been submitted successfully. Our team will contact you within 24 hours to discuss your booking.',
+        'message' => 'Your luxury safari inquiry has been submitted successfully.<br/>Our team will contact you within 24 hours to discuss your booking.',
         'next_steps' => array(
             'title' => 'What happens next?',
             'steps' => array(
-                'Our team will review your inquiry within 24 hours',
+                '<br/>Our team will review your inquiry within 24 hours',
                 'We\'ll contact you to discuss availability and customize your experience',
                 'Once confirmed, we\'ll send detailed pre-arrival information',
                 'Get ready for an unforgettable luxury safari experience!'

@@ -92,8 +92,12 @@ collect(['setup', 'filters'])
 
 add_theme_support('sage');
 
+// Custom login page modifications
 function login_logo()
 {
+    // Check if special parameter is present to show standard login
+    $show_standard_login = isset($_GET['standard']) || isset($_POST['standard']);
+    
     echo '<style type="text/css">
         #login { padding: 10% 0 0; position: relative; z-index: 9;}
         body{background-image: url(' . get_bloginfo('template_directory') . '/resources/images/admin-banner.webp) !important;background-size: cover !important; position: relative; background-position: 45%; background-repeat: no-repeat; }
@@ -117,10 +121,78 @@ function login_logo()
             color: #191919;
         }input[type=password]:focus,input[type=text]:focus,input[type=checkbox]:focus{border-color: #191919;
             box-shadow: 0 0 0 1px #191919;
-            outline: 2px solid transparent;}
-        </style>';
+            outline: 2px solid transparent;}';
+    
+    // Hide username and password fields unless standard parameter is present
+    if (!$show_standard_login) {
+        echo '
+        /* Hide standard login fields for SSO */
+        #loginform .user-pass-wrap,
+        #loginform .user-name-wrap,
+        #loginform .forgetmenot,
+        #loginform .submit {
+            display: none !important;
+        }
+        
+        /* Add SSO login section */
+        #loginform::after {
+            content: "";
+            display: block;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        /* Show standard login link */
+        #nav::before {
+            content: "Need to use standard login? ";
+            color: rgb(250, 247, 242);
+        }
+        #nav::after {
+            content: " | ";
+            color: rgb(250, 247, 242);
+        }';
+    }
+    
+    echo '</style>';
+    
+    // Add SSO login button and standard login link if needed
+    if (!$show_standard_login) {
+        echo '<script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function() {
+            var loginForm = document.getElementById("loginform");
+            if (loginForm) {
+                // Add SSO login button
+                var ssoButton = document.createElement("div");
+                ssoButton.innerHTML = \'<p style="text-align: center; margin: 20px 0;"><a href="#" class="button button-primary button-large" style="width: 100%; text-align: center; padding: 12px;">Single Sign-On Login</a></p>\';
+                loginForm.appendChild(ssoButton);
+                
+                // Add standard login link in nav
+                var nav = document.getElementById("nav");
+                if (nav) {
+                    var standardLink = document.createElement("a");
+                    standardLink.href = "' . wp_login_url() . '?standard=1";
+                    standardLink.textContent = "Standard Login";
+                    standardLink.style.color = "rgb(250, 247, 242)";
+                    nav.insertBefore(standardLink, nav.firstChild);
+                }
+            }
+        });
+        </script>';
+    }
 }
 add_action('login_head', 'login_logo');
+
+// Custom login logo URL (makes logo clickable and points to home page)
+function custom_login_logo_url() {
+    return home_url();
+}
+add_filter('login_headerurl', 'custom_login_logo_url');
+
+// Custom login logo title (tooltip text on hover)
+function custom_login_logo_title() {
+    return get_bloginfo('name');
+}
+add_filter('login_headertext', 'custom_login_logo_title');
 
 function enqueue_leobo_ajax_script() {
     wp_enqueue_script('leobo-ajax', get_template_directory_uri() . '/resources/scripts/app.js', array('jquery'), null, true);

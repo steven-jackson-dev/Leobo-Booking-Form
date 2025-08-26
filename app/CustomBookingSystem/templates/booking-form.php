@@ -333,7 +333,7 @@ $test_data = array(
                             <h3 class="section-title"><?php echo strtoupper(booking_content('fields.checkin_date')); ?></h3>
                             <p class="section-subtitle">Transfer requests?</p>
                             
-                            <div class="radio-group">
+                            <div class="radio-group transfer-options-container">
                                 <label class="radio-option">
                                     <input type="radio" name="transfer" value="private_helicopter" required />
                                     <span class="radiomark"></span>
@@ -631,7 +631,7 @@ $test_data = array(
                         <div class="thank-you-content">
                             <h2 class="thank-you-title"><?php echo esc_html(booking_content('success.title')); ?></h2>
                             <p class="thank-you-message">
-                                <?php echo esc_html(booking_content('success.message')); ?>
+                                Your luxury safari enquiry has been submitted successfully. <br/>Our team will contact you within 24 hours to discuss your booking.
                             </p>
                         </div>
                     </div>
