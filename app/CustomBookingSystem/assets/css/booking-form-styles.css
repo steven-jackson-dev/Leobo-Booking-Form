@@ -54,7 +54,7 @@
 .leobo-booking-wrapper {
     font-family: var(--font-family);
     color: var(--text-primary);
-    background: var(--background-dark);
+    /* background: var(--background-dark); */
     min-height: 100vh;
     padding: 0;
     margin: 0;
@@ -119,6 +119,10 @@
     font-size: var(--font-size-lg);
 }
 
+.step-icon img{
+    max-width: 40px;
+}
+
 /* ====================
    MAIN LAYOUT
    ==================== */
@@ -137,7 +141,7 @@
 
 .booking-sidebar {
     width: var(--sidebar-width);
-    background: var(--background-dark);
+    /* background: var(--background-dark); */
     padding: var(--spacing-xl);
     border-left: 1px solid var(--border-color);
     /* box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2); */
@@ -1153,7 +1157,7 @@ input[type="checkbox"]:not(:has(+ .checkmark)) + .checkmark:only-child {
 }
 
 .summary-section:hover {
-    background: rgba(255, 255, 255, 0.05);
+    /* background: rgba(255, 255, 255, 0.05); */
     border-color: rgba(212, 184, 150, 0.4);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);

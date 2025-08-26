@@ -1,5 +1,5 @@
 {{--
-  Template Name: Guest Enquiry
+  Template Name: Guest Enquiry New
 --}}
 
 <section class="form-bg h-[100vh]" style="background-image: url('{!! $guest_enquiry_bg['url'] !!}'); ">
@@ -79,7 +79,7 @@
     </div>
   </section>
 
-
+<!-- 
   <section>
     <div class="bg-maroonLight h-[65px] absolute md:top-[105px] z-[4] w-full">
       <div class="custom-progress-indicator" id="custom-progress-indicator">
@@ -111,11 +111,17 @@
         </div>
       </div>
     </div>
-  </section>
-  <section>
-    <div class="guest-enquiry">
-      {!! the_content() !!}
+  </section> -->
+
+    <section>
+      <h1 class="text-2xl font-bold text-lightSand" style='padding:40px; text-align:center; background-color: rgb(34, 20, 24);'><?php the_title(); ?></h1>
+      <div class="guest-enquiry">
+      <?php echo do_shortcode('[leobo_custom_booking_form]'); ?>
     </div>
+  </section>
+
+
+    
   </section>
 </section>
 
@@ -123,7 +129,7 @@
 
 
 <style>
-  .custom-progress-indicator {
+  /* .custom-progress-indicator {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -185,7 +191,7 @@
     outline: none;
     box-shadow: none;
     border: none;
-  }
+  } */
 </style>
 
 <script>

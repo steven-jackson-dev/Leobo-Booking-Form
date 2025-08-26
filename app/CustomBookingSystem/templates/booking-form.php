@@ -21,8 +21,10 @@ $is_test_mode = isset($atts['test_mode']) && $atts['test_mode'];
 $is_embedded_admin = isset($atts['embedded_admin']) && $atts['embedded_admin'];
 
 // Content helper function
-function booking_content($key, $default = '', $replacements = array()) {
-    return LeoboBookingContent::get($key, $default, $replacements);
+if (!function_exists('booking_content')) {
+    function booking_content($key, $default = '', $replacements = array()) {
+        return LeoboBookingContent::get($key, $default, $replacements);
+    }
 }
 
 // Test data for pre-filling (only used in test mode)
@@ -88,24 +90,25 @@ $test_data = array(
 </div>
 <?php endif; ?>
 
+
 <div id="leobo-booking-system" class="leobo-booking-wrapper<?php echo $is_test_mode ? ' test-mode-active' : ''; ?>">
     
     <!-- Header Progress -->
     <div class="booking-header-progress">
         <div class="progress-step active" data-step="1">
-            <span class="step-icon">📅</span>
+            <span class="step-icon"><img src="<?php echo esc_url(get_template_directory_uri() . '/app/CustomBookingSystem/assets/images/icons/1.png'); ?>" alt="Step 1"></span>
             <span class="step-text">AVAILABILITY CHECK</span>
         </div>
         <div class="progress-step" data-step="2">
-            <span class="step-icon">👁</span>
+            <span class="step-icon"><img src="<?php echo esc_url(get_template_directory_uri() . '/app/CustomBookingSystem/assets/images/icons/2.png'); ?>" alt="Step 2"></span>
             <span class="step-text">TAILOR YOUR STAY</span>
         </div>
         <div class="progress-step" data-step="3">
-            <span class="step-icon">👤</span>
+            <span class="step-icon"><img src="<?php echo esc_url(get_template_directory_uri() . '/app/CustomBookingSystem/assets/images/icons/3.png'); ?>" alt="Step 3"></span>
             <span class="step-text">GUEST INFORMATION</span>
         </div>
         <div class="progress-step" data-step="4">
-            <span class="step-icon">🧩</span>
+            <span class="step-icon"><img src="<?php echo esc_url(get_template_directory_uri() . '/app/CustomBookingSystem/assets/images/icons/4.png'); ?>" alt="Step 4"></span>
             <span class="step-text">RESERVED & READY</span>
         </div>
     </div>
