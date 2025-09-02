@@ -41,8 +41,15 @@ function leobo_should_load_booking_system() {
         return true;
     }
     
-    // Load on pages with booking shortcodes
+    // Load for WP-CLI requests
+    if (defined('WP_CLI') && WP_CLI) {
+        return true;
+    }
+    
+    // Check if we're in the context where shortcodes might be used
     global $post;
+    
+    // Method 1: Check current post content for shortcodes
     if ($post && is_object($post) && isset($post->post_content)) {
         if (has_shortcode($post->post_content, 'leobo_custom_booking_form') ||
             has_shortcode($post->post_content, 'leobo_test_booking_form')) {
@@ -50,14 +57,32 @@ function leobo_should_load_booking_system() {
         }
     }
     
-    // Load on specific booking-related pages (customize these based on your site)
+    // Method 1b: Check if shortcode might be in widgets or other content areas
+    if (is_active_sidebar('sidebar-primary') || is_active_sidebar('sidebar-footer')) {
+        // Load if widgets might contain shortcode (we'll check this more thoroughly later)
+        $widget_content = '';
+        ob_start();
+        dynamic_sidebar('sidebar-primary');
+        dynamic_sidebar('sidebar-footer');
+        $widget_content = ob_get_clean();
+        
+        if (strpos($widget_content, '[leobo_custom_booking_form') !== false || 
+            strpos($widget_content, '[leobo_test_booking_form') !== false) {
+            return true;
+        }
+    }
+    
+    // Method 2: Check if we're on specific booking-related pages
     if (is_page() && $post) {
         $booking_page_slugs = array(
             'booking',
+            'book',
             'make-a-reservation', 
             'book-now',
             'enquiry',
-            'contact'
+            'contact',
+            'reservation',
+            'enquire'
         );
         
         if (in_array($post->post_name, $booking_page_slugs)) {
@@ -65,12 +90,28 @@ function leobo_should_load_booking_system() {
         }
     }
     
-    // Check if current page template uses booking functionality
+    // Method 3: Check page template
     if (is_page()) {
         $template = get_page_template_slug();
         if (strpos($template, 'booking') !== false) {
             return true;
         }
+    }
+    
+    // Method 4: Check URL parameters that might indicate booking functionality
+    if (isset($_GET['booking']) || isset($_GET['test_booking_form'])) {
+        return true;
+    }
+    
+    // Method 5: Check for specific page ID 2931 (user's target page)
+    if ($post && $post->ID == 2931) {
+        return true;
+    }
+    
+    // Method 6: Fallback - temporarily load on all pages to ensure functionality
+    // Remove this after confirming everything works
+    if (defined('WP_DEBUG') && WP_DEBUG && get_option('leobo_booking_debug_mode', false)) {
+        return true;
     }
     
     // Don't load on other pages for performance
@@ -93,6 +134,7 @@ function leobo_load_booking_system_files() {
  * This hook ensures WordPress is fully loaded and only loads when needed
  */
 add_action('init', 'leobo_custom_booking_init', 10);
+add_action('wp', 'leobo_custom_booking_fallback_init', 5); // Fallback hook that runs later
 
 function leobo_custom_booking_init() {
     // Performance optimization: Only load booking system when needed
@@ -118,6 +160,33 @@ function leobo_custom_booking_init() {
     $GLOBALS['leobo_booking_system'] = new LeoboCustomBookingSystem();
     
     do_action('leobo_custom_booking_loaded');
+}
+
+/**
+ * Fallback initialization for shortcode detection
+ * This runs later in WordPress lifecycle when post content is fully available
+ */
+function leobo_custom_booking_fallback_init() {
+    // Skip if already loaded
+    if (isset($GLOBALS['leobo_booking_system'])) {
+        return;
+    }
+    
+    // Check again for shortcodes with more context
+    global $post;
+    if ($post && is_object($post) && isset($post->post_content)) {
+        if (has_shortcode($post->post_content, 'leobo_custom_booking_form') ||
+            has_shortcode($post->post_content, 'leobo_test_booking_form')) {
+            
+            // Load the system if shortcode is found
+            leobo_load_booking_system_files();
+            
+            if (class_exists('LeoboCustomBookingSystem')) {
+                $GLOBALS['leobo_booking_system'] = new LeoboCustomBookingSystem();
+                do_action('leobo_custom_booking_loaded');
+            }
+        }
+    }
 }
 
 /**

@@ -1358,6 +1358,8 @@ class LeoboBookingForm {
     
     // Pricing Methods
     updatePricing() {
+        console.log('=== LIVE AJAX PRICING UPDATE ===');
+        
         // Check if leobo_booking_system is available
         if (typeof leobo_booking_system === 'undefined') {
             console.error('Leobo booking system configuration not loaded');
@@ -1367,6 +1369,7 @@ class LeoboBookingForm {
         
         // Only calculate if we have dates and at least 1 adult
         if (!this.formData.dates.checkin || !this.formData.dates.checkout || this.formData.guests.adults < 1) {
+            console.log('Missing required data for pricing calculation');
             return;
         }
         
@@ -1390,6 +1393,12 @@ class LeoboBookingForm {
             helicopter_package: this.formData.extras.helicopter_package
         };
         
+        // DEBUG: Log what we're sending
+        console.log('=== LIVE AJAX PRICING DEBUG ===');
+        console.log('AJAX URL:', leobo_booking_system.ajax_url);
+        console.log('Pricing data being sent:', pricingData);
+        console.log('leobo_booking_system object:', leobo_booking_system);
+        
         // Show loading state
         this.showPricingLoader(true);
         
@@ -1401,17 +1410,57 @@ class LeoboBookingForm {
             },
             body: new URLSearchParams(pricingData)
         })
-        .then(response => response.json())
+        .then(response => {
+            // DEBUG: Log the response details
+            console.log('=== LIVE AJAX RESPONSE ===');
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            console.log('Response ok:', response.ok);
+            console.log('Response url:', response.url);
+            console.log('Response type:', response.type);
+            
+            // Try to get response text first to see what we're actually receiving
+            return response.text().then(text => {
+                console.log('Raw response text:', text);
+                console.log('Response text length:', text.length);
+                console.log('Response text type:', typeof text);
+                
+                // If response is just "0", that means the AJAX action wasn't found
+                if (text === '0') {
+                    throw new Error('AJAX endpoint not found - WordPress returned "0"');
+                }
+                
+                try {
+                    const jsonData = JSON.parse(text);
+                    console.log('Successfully parsed JSON:', jsonData);
+                    return jsonData;
+                } catch (e) {
+                    console.error('Failed to parse JSON:', e);
+                    console.log('Response is not valid JSON');
+                    throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+                }
+            });
+        })
         .then(data => {
             this.showPricingLoader(false);
             
+            console.log('=== PROCESSED AJAX DATA ===');
+            console.log('Full data object:', data);
+            console.log('data.success:', data.success);
+            console.log('data.data:', data.data);
+            
             if (data.success) {
+                console.log('=== SUCCESSFUL PRICING RESPONSE ===');
+                console.log('Pricing data received:', data.data);
+                
                 // Update pricing data with real calculations
                 this.formData.pricing.accommodation = data.data.accommodation_total;
                 this.formData.pricing.extras = data.data.helicopter_total || 0;
                 this.formData.pricing.total = data.data.grand_total;
                 this.formData.pricing.nights = data.data.nights;
                 this.formData.pricing.breakdown = data.data.nightly_breakdown;
+                
+                console.log('Updated form pricing data:', this.formData.pricing);
                 
                 // Update display
                 this.updatePricingDisplay();
@@ -1422,16 +1471,22 @@ class LeoboBookingForm {
                     this.showOptionalExtras();
                 }
             } else {
-                console.error('Pricing calculation error:', data.data);
-                this.showPricingError(data.data);
+                console.error('=== PRICING ERROR RESPONSE ===');
+                console.error('Full data object:', data);
+                console.error('data.success:', data.success);
+                console.error('data.data:', data.data);
+                console.error('Error message:', data.data);
+                this.showPricingError(data.data || 'Unknown pricing error');
             }
         })
         .catch(error => {
             this.showPricingLoader(false);
-            console.error('AJAX error:', error);
-            console.error('AJAX URL:', leobo_booking_system.ajax_url);
-            console.error('Pricing data sent:', pricingData);
-            this.showPricingError('Network error. Please check your connection and try again.');
+            console.error('=== AJAX CATCH ERROR ===');
+            console.error('Error type:', typeof error);
+            console.error('Error message:', error.message);
+            console.error('Full error object:', error);
+            console.error('Stack trace:', error.stack);
+            this.showPricingError('Network error: ' + error.message);
         });
     }
     
@@ -2028,6 +2083,62 @@ function toggleNightlyDetails() {
     }
 }
 
+// DEBUG: Global test function for manual testing
+window.testBookingAjax = function() {
+    console.log('=== MANUAL AJAX TEST ===');
+    
+    if (typeof leobo_booking_system === 'undefined') {
+        console.error('leobo_booking_system is not defined!');
+        return;
+    }
+    
+    const testData = {
+        action: 'test_booking_ajax',
+        nonce: leobo_booking_system.nonce
+    };
+    
+    console.log('Testing basic AJAX with:', testData);
+    console.log('Using URL:', leobo_booking_system.ajax_url);
+    
+    fetch(leobo_booking_system.ajax_url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(testData)
+    })
+    .then(response => {
+        console.log('Test response status:', response.status);
+        console.log('Test response ok:', response.ok);
+        return response.text();
+    })
+    .then(text => {
+        console.log('Test response text:', text);
+        try {
+            const data = JSON.parse(text);
+            console.log('Test response parsed:', data);
+        } catch (e) {
+            console.error('Test response not JSON:', e);
+        }
+    })
+    .catch(error => {
+        console.error('Test AJAX error:', error);
+    });
+};
+
+// Global function to toggle between mock and real pricing
+window.toggleMockPricing = function(useMock = true) {
+    console.log(useMock ? 'Switching to MOCK pricing' : 'Switching to REAL AJAX pricing');
+    window.useMockPricing = useMock;
+    if (window.bookingFormInstance) {
+        console.log('Pricing mode changed. Updating form...');
+        window.bookingFormInstance.updatePricing();
+    }
+};
+
+// Set default to live AJAX pricing
+window.useMockPricing = false;
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Add a small delay to ensure WordPress localization is complete
@@ -2035,6 +2146,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof leobo_booking_system === 'undefined') {
             console.error('leobo_booking_system not available after delay. Check script dependencies.');
         }
-        new LeoboBookingForm();
+        window.bookingFormInstance = new LeoboBookingForm();
     }, 100);
 });

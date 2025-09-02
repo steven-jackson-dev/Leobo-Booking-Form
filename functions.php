@@ -1,6 +1,274 @@
 <?php
-// Initialize the new unified Custom Booking System
-require_once get_template_directory() . '/app/CustomBookingSystem/init.php';
+// Emergency AJAX handler - register as early as possible
+add_action('init', function() {
+    error_log('=== INIT ACTION FIRED ===');
+    error_log('Is AJAX: ' . (wp_doing_ajax() ? 'YES' : 'NO'));
+    error_log('Current action: ' . ($_POST['action'] ?? $_GET['action'] ?? 'none'));
+    
+    // If this is an AJAX request for booking, load the system immediately
+    if (wp_doing_ajax() && isset($_POST['action']) && $_POST['action'] === 'calculate_booking_price') {
+        error_log('=== EMERGENCY AJAX HANDLER FOR BOOKING PRICE ===');
+        
+        // Load all required files
+        $booking_path = get_template_directory() . '/app/CustomBookingSystem';
+        
+        if (file_exists($booking_path . '/CustomBookingSystem.php')) {
+            error_log('Loading booking system files...');
+            require_once $booking_path . '/includes/BookingAvailability.php';
+            require_once $booking_path . '/includes/BookingPricing.php';
+            require_once $booking_path . '/includes/BookingDatabase.php';
+            require_once $booking_path . '/includes/BookingEmail.php';
+            require_once $booking_path . '/includes/BookingContent.php';
+            require_once $booking_path . '/CustomBookingSystem.php';
+            
+            if (class_exists('LeoboCustomBookingSystem')) {
+                error_log('Creating booking system instance...');
+                $booking_system = new LeoboCustomBookingSystem();
+                $GLOBALS['leobo_booking_system'] = $booking_system;
+                error_log('=== EMERGENCY BOOKING SYSTEM LOADED ===');
+            } else {
+                error_log('=== BOOKING SYSTEM CLASS NOT FOUND ===');
+            }
+        } else {
+            error_log('=== BOOKING SYSTEM FILES NOT FOUND ===');
+        }
+    }
+}, 1); // Priority 1 to run very early
+
+add_action('wp_ajax_calculate_booking_price', function() {
+    error_log('=== DIRECT AJAX HOOK FIRED ===');
+    if (isset($GLOBALS['leobo_booking_system'])) {
+        error_log('Calling pricing method...');
+        $GLOBALS['leobo_booking_system']->ajax_calculate_price();
+    } else {
+        error_log('Booking system not available in direct hook');
+        wp_send_json_error('Booking system not loaded');
+    }
+});
+
+add_action('wp_ajax_nopriv_calculate_booking_price', function() {
+    error_log('=== DIRECT AJAX NOPRIV HOOK FIRED ===');
+    if (isset($GLOBALS['leobo_booking_system'])) {
+        error_log('Calling pricing method...');
+        $GLOBALS['leobo_booking_system']->ajax_calculate_price();
+    } else {
+        error_log('Booking system not available in direct nopriv hook');
+        wp_send_json_error('Booking system not loaded');
+    }
+});
+
+// OPTIMIZED FIX: Load booking system only when needed, but reliably
+// This replaces the emergency fix with a smarter approach
+
+// Add a hook that runs early to detect shortcodes properly
+add_action('wp', function() {
+    global $post;
+    
+    // Check if booking system should load
+    $should_load = false;
+    
+    // Load in admin
+    if (is_admin()) {
+        $should_load = true;
+    }
+    
+    // Load for AJAX requests
+    if (defined('DOING_AJAX') && DOING_AJAX) {
+        $should_load = true;
+    }
+    
+    // Load for specific page ID 2931 (your test page)
+    if ($post && $post->ID == 2931) {
+        $should_load = true;
+    }
+    
+    // Load if shortcode detected in content
+    if ($post && isset($post->post_content)) {
+        if (has_shortcode($post->post_content, 'leobo_custom_booking_form') ||
+            has_shortcode($post->post_content, 'leobo_test_booking_form')) {
+            $should_load = true;
+        }
+    }
+    
+    // Load on specific booking pages
+    if (is_page() && $post) {
+        $booking_page_slugs = array(
+            'booking', 'book', 'make-a-reservation', 'book-now', 
+            'enquiry', 'contact', 'reservation', 'test-custom-booking-form'
+        );
+        
+        if (in_array($post->post_name, $booking_page_slugs)) {
+            $should_load = true;
+        }
+    }
+    
+    // Only load if needed and not already loaded
+    if ($should_load && !isset($GLOBALS['leobo_booking_system'])) {
+        $booking_path = get_template_directory() . '/app/CustomBookingSystem';
+        
+        if (file_exists($booking_path . '/CustomBookingSystem.php')) {
+            require_once $booking_path . '/includes/BookingAvailability.php';
+            require_once $booking_path . '/includes/BookingPricing.php';
+            require_once $booking_path . '/includes/BookingDatabase.php';
+            require_once $booking_path . '/includes/BookingEmail.php';
+            require_once $booking_path . '/includes/BookingContent.php';
+            require_once $booking_path . '/CustomBookingSystem.php';
+            
+            if (class_exists('LeoboCustomBookingSystem')) {
+                $GLOBALS['leobo_booking_system'] = new LeoboCustomBookingSystem();
+                error_log('=== BOOKING SYSTEM LOADED SUCCESSFULLY ===');
+            }
+        }
+    }
+    
+    // TEMPORARY: Force loading for debugging AJAX issues
+    if (wp_doing_ajax()) {
+        error_log('=== AJAX REQUEST DETECTED ===');
+        error_log('$_POST action: ' . ($_POST['action'] ?? 'not set'));
+        error_log('$_GET action: ' . ($_GET['action'] ?? 'not set'));
+        error_log('Current user: ' . wp_get_current_user()->user_login);
+        
+        // Force load booking system for any booking-related AJAX
+        $booking_actions = ['calculate_booking_price', 'test_booking_ajax', 'submit_booking'];
+        $current_action = $_POST['action'] ?? $_GET['action'] ?? '';
+        
+        if (in_array($current_action, $booking_actions) || !isset($GLOBALS['leobo_booking_system'])) {
+            error_log('=== ATTEMPTING FORCE LOAD FOR AJAX ===');
+            
+            $booking_path = get_template_directory() . '/app/CustomBookingSystem';
+            
+            if (file_exists($booking_path . '/CustomBookingSystem.php')) {
+                error_log('=== BOOKING SYSTEM FILES FOUND ===');
+                error_log('Path: ' . $booking_path);
+                
+                // Load required files
+                $required_files = [
+                    '/includes/BookingAvailability.php',
+                    '/includes/BookingPricing.php', 
+                    '/includes/BookingDatabase.php',
+                    '/includes/BookingEmail.php',
+                    '/includes/BookingContent.php',
+                    '/CustomBookingSystem.php'
+                ];
+                
+                foreach ($required_files as $file) {
+                    $file_path = $booking_path . $file;
+                    if (file_exists($file_path)) {
+                        require_once $file_path;
+                        error_log('Loaded: ' . $file);
+                    } else {
+                        error_log('Missing file: ' . $file_path);
+                    }
+                }
+                
+                if (class_exists('LeoboCustomBookingSystem')) {
+                    if (!isset($GLOBALS['leobo_booking_system'])) {
+                        $GLOBALS['leobo_booking_system'] = new LeoboCustomBookingSystem();
+                        error_log('=== BOOKING SYSTEM FORCE LOADED FOR AJAX ===');
+                    } else {
+                        error_log('=== BOOKING SYSTEM ALREADY EXISTS ===');
+                    }
+                } else {
+                    error_log('=== BOOKING SYSTEM CLASS NOT FOUND AFTER INCLUDE ===');
+                }
+            } else {
+                error_log('=== BOOKING SYSTEM FILES NOT FOUND ===');
+                error_log('Looked in: ' . $booking_path . '/CustomBookingSystem.php');
+            }
+        } else {
+            error_log('=== AJAX ACTION NOT BOOKING RELATED: ' . $current_action . ' ===');
+        }
+    }
+}, 1);
+
+// DISABLED FOR PRODUCTION: Temporary debug function to check booking system status
+/*
+add_action('wp_footer', function() {
+    if (is_super_admin()) { // Removed WP_DEBUG requirement for easier debugging
+        global $post;
+        $booking_loaded = isset($GLOBALS['leobo_booking_system']);
+        $has_shortcode = false;
+        $shortcode_content = '';
+        
+        if ($post && isset($post->post_content)) {
+            $has_shortcode = has_shortcode($post->post_content, 'leobo_custom_booking_form') || 
+                           has_shortcode($post->post_content, 'leobo_test_booking_form');
+            
+            // Extract shortcode content for debugging
+            if (strpos($post->post_content, '[leobo_custom_booking_form') !== false) {
+                $shortcode_content = 'Found: [leobo_custom_booking_form]';
+            }
+            if (strpos($post->post_content, '[leobo_test_booking_form') !== false) {
+                $shortcode_content = 'Found: [leobo_test_booking_form]';
+            }
+        }
+        
+        // Check if shortcode is registered
+        $shortcode_exists = shortcode_exists('leobo_custom_booking_form') || shortcode_exists('leobo_test_booking_form');
+        
+        // Performance metrics
+        $memory_usage = memory_get_usage(true) / 1024 / 1024; // MB
+        $peak_memory = memory_get_peak_usage(true) / 1024 / 1024; // MB
+        
+        echo '<div style="position: fixed; bottom: 10px; left: 10px; background: #333; color: #fff; padding: 15px; font-size: 11px; z-index: 9999; max-width: 400px; border-radius: 5px;">';
+        echo '<strong>🔍 Booking System Debug (Page ID: ' . ($post ? $post->ID : 'Unknown') . '):</strong><br><br>';
+        echo '<strong>System Status:</strong><br>';
+        echo '📦 Booking Loaded: ' . ($booking_loaded ? '<span style="color:#4CAF50">YES</span>' : '<span style="color:#F44336">NO</span>') . '<br>';
+        echo '�️ Shortcode Exists: ' . ($shortcode_exists ? '<span style="color:#4CAF50">YES</span>' : '<span style="color:#F44336">NO</span>') . '<br>';
+        echo '💾 Memory: ' . round($memory_usage, 1) . 'MB (Peak: ' . round($peak_memory, 1) . 'MB)<br>';
+        echo '🗄️ DB Queries: ' . get_num_queries() . '<br><br>';
+        
+        echo '<strong>Content Analysis:</strong><br>';
+        echo '📝 Has Shortcode: ' . ($has_shortcode ? '<span style="color:#4CAF50">YES</span>' : '<span style="color:#F44336">NO</span>') . '<br>';
+        if ($shortcode_content) {
+            echo '🔍 ' . $shortcode_content . '<br>';
+        }
+        echo '📄 Page: ' . (isset($post->post_name) ? $post->post_name : 'Unknown') . '<br>';
+        echo '📋 Type: ' . get_post_type() . '<br>';
+        
+        if ($post && $post->ID == 2931) {
+            echo '<br><strong style="color:#FF9800">🎯 TARGET PAGE 2931 DETECTED!</strong><br>';
+            if ($post->post_content) {
+                $content_length = strlen($post->post_content);
+                echo '📏 Content Length: ' . $content_length . ' chars<br>';
+                echo '🔍 Content Preview: ' . substr(strip_tags($post->post_content), 0, 100) . '...<br>';
+            }
+        }
+        
+        echo '</div>';
+    }
+});
+*/
+
+// DISABLED FOR PRODUCTION: Test shortcode registration  
+/*
+add_action('wp_footer', function() {
+    if (is_super_admin()) {
+        echo '<div style="position: fixed; bottom: 10px; right: 10px; background: #666; color: #fff; padding: 10px; font-size: 11px; z-index: 9999; max-width: 350px; border-radius: 5px;">';
+        echo '<strong>🧪 Performance Analysis:</strong><br>';
+        echo 'leobo_custom_booking_form: ' . (shortcode_exists('leobo_custom_booking_form') ? '<span style="color:#4CAF50">✓</span>' : '<span style="color:#F44336">✗</span>') . '<br>';
+        echo 'leobo_test_booking_form: ' . (shortcode_exists('leobo_test_booking_form') ? '<span style="color:#4CAF50">✓</span>' : '<span style="color:#F44336">✗</span>') . '<br>';
+        echo '<br><strong>Data Loading Times:</strong><br>';
+        echo '<div id="performance-data">Loading...</div>';
+        echo '<script>
+        if (typeof leobo_booking_system !== "undefined" && leobo_booking_system.performance_debug) {
+            var perf = leobo_booking_system.performance_debug;
+            var cacheStatus = perf.cached ? "<span style=\"color:#4CAF50\">[CACHED]</span>" : "<span style=\"color:#FF9800\">[FRESH]</span>";
+            document.getElementById("performance-data").innerHTML = 
+                cacheStatus + "<br>" +
+                "Frontend Data: " + perf.frontend_data_ms + "ms<br>" +
+                "Blocked Dates: " + perf.blocked_dates_ms + "ms<br>" +
+                "Season Dates: " + perf.season_dates_ms + "ms<br>" +
+                "ACF Config: " + perf.acf_config_ms + "ms<br>" +
+                "<strong>Total: " + perf.total_ms + "ms</strong>";
+        } else {
+            document.getElementById("performance-data").innerHTML = "No performance data available";
+        }
+        </script>';
+        echo '</div>';
+    }
+});
+*/
 
 /*
 |--------------------------------------------------------------------------
@@ -92,12 +360,8 @@ collect(['setup', 'filters'])
 
 add_theme_support('sage');
 
-// Custom login page modifications
 function login_logo()
 {
-    // Check if special parameter is present to show standard login
-    $show_standard_login = isset($_GET['standard']) || isset($_POST['standard']);
-    
     echo '<style type="text/css">
         #login { padding: 10% 0 0; position: relative; z-index: 9;}
         body{background-image: url(' . get_bloginfo('template_directory') . '/resources/images/admin-banner.webp) !important;background-size: cover !important; position: relative; background-position: 45%; background-repeat: no-repeat; }
@@ -121,78 +385,10 @@ function login_logo()
             color: #191919;
         }input[type=password]:focus,input[type=text]:focus,input[type=checkbox]:focus{border-color: #191919;
             box-shadow: 0 0 0 1px #191919;
-            outline: 2px solid transparent;}';
-    
-    // Hide username and password fields unless standard parameter is present
-    if (!$show_standard_login) {
-        echo '
-        /* Hide standard login fields for SSO */
-        #loginform .user-pass-wrap,
-        #loginform .user-name-wrap,
-        #loginform .forgetmenot,
-        #loginform .submit {
-            display: none !important;
-        }
-        
-        /* Add SSO login section */
-        #loginform::after {
-            content: "";
-            display: block;
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        /* Show standard login link */
-        #nav::before {
-            content: "Need to use standard login? ";
-            color: rgb(250, 247, 242);
-        }
-        #nav::after {
-            content: " | ";
-            color: rgb(250, 247, 242);
-        }';
-    }
-    
-    echo '</style>';
-    
-    // Add SSO login button and standard login link if needed
-    if (!$show_standard_login) {
-        echo '<script type="text/javascript">
-        document.addEventListener("DOMContentLoaded", function() {
-            var loginForm = document.getElementById("loginform");
-            if (loginForm) {
-                // Add SSO login button
-                var ssoButton = document.createElement("div");
-                ssoButton.innerHTML = \'<p style="text-align: center; margin: 20px 0;"><a href="#" class="button button-primary button-large" style="width: 100%; text-align: center; padding: 12px;">Single Sign-On Login</a></p>\';
-                loginForm.appendChild(ssoButton);
-                
-                // Add standard login link in nav
-                var nav = document.getElementById("nav");
-                if (nav) {
-                    var standardLink = document.createElement("a");
-                    standardLink.href = "' . wp_login_url() . '?standard=1";
-                    standardLink.textContent = "Standard Login";
-                    standardLink.style.color = "rgb(250, 247, 242)";
-                    nav.insertBefore(standardLink, nav.firstChild);
-                }
-            }
-        });
-        </script>';
-    }
+            outline: 2px solid transparent;}
+        </style>';
 }
 add_action('login_head', 'login_logo');
-
-// Custom login logo URL (makes logo clickable and points to home page)
-function custom_login_logo_url() {
-    return home_url();
-}
-add_filter('login_headerurl', 'custom_login_logo_url');
-
-// Custom login logo title (tooltip text on hover)
-function custom_login_logo_title() {
-    return get_bloginfo('name');
-}
-add_filter('login_headertext', 'custom_login_logo_title');
 
 function enqueue_leobo_ajax_script() {
     wp_enqueue_script('leobo-ajax', get_template_directory_uri() . '/resources/scripts/app.js', array('jquery'), null, true);
