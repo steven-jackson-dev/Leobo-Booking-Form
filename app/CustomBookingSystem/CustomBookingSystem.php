@@ -93,10 +93,18 @@ class LeoboCustomBookingSystem {
     }
     
     /**
-     * Enqueue scripts and styles
+     * Enqueue scripts and styles (optimized for performance)
      */
     public function enqueue_scripts() {
-        if (!is_page() && !is_single()) {
+        // Performance optimization: Only enqueue on relevant pages
+        if (!is_page() && !is_single() && !is_admin()) {
+            return;
+        }
+        
+        // Additional check: Only load if booking shortcode exists or is admin
+        global $post;
+        if (!is_admin() && $post && !has_shortcode($post->post_content, 'leobo_custom_booking_form') && 
+            !has_shortcode($post->post_content, 'leobo_test_booking_form')) {
             return;
         }
         

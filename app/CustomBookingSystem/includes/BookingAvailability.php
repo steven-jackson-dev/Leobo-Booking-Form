@@ -147,7 +147,7 @@ class LeoboBookingAvailability {
     public function get_blocked_dates($months_ahead = 12, $format = 'Y-m-d') {
         // API returns all blocked dates in one call, no need for date range
         $start_date = date('Y/m/d');
-        $end_date = date('Y/m/d', strtotime('+7 days')); // Just use a short range as API returns everything
+        $end_date = date('Y/m/d', strtotime('+12 months')); 
         
         $availability_data = $this->get_availability($start_date, $end_date);
         

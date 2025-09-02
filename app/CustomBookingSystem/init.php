@@ -1,12 +1,12 @@
 <?php
 /**
- * Leobo Custom Booking System - Main Initialization File
+ * Leobo Custom Booking System - Optimized Initialization File
  * 
- * This file bootstraps the entire Custom Booking System and should be included
- * in your theme's functions.php or as a plugin.
+ * This file bootstraps the entire Custom Booking System with performance optimization.
+ * Only loads on pages that actually need booking functionality.
  * 
  * @package LeoboCustomBookingSystem
- * @version 1.0.0
+ * @version 2.1.0 - Performance Optimized
  * @author Your Development Team
  * @license GPL-2.0+
  */
@@ -19,26 +19,98 @@ defined('ABSPATH') || exit;
  */
 define('LEOBO_CUSTOM_BOOKING_PATH', dirname(__FILE__));
 define('LEOBO_CUSTOM_BOOKING_URL', get_template_directory_uri() . '/app/CustomBookingSystem');
-define('LEOBO_CUSTOM_BOOKING_VERSION', '1.0.0');
+define('LEOBO_CUSTOM_BOOKING_VERSION', '2.1.0');
 
 /**
- * Load required files
+ * Determine if booking system should be loaded on current request
+ * This prevents unnecessary loading on non-booking pages for better performance
  */
-require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingAvailability.php';
-require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingPricing.php';
-require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingDatabase.php';
-require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingEmail.php';
-require_once LEOBO_CUSTOM_BOOKING_PATH . '/CustomBookingSystem.php';
+function leobo_should_load_booking_system() {
+    // Always load in admin for management
+    if (is_admin()) {
+        return true;
+    }
+    
+    // Load for AJAX requests (needed for form submissions)
+    if (defined('DOING_AJAX') && DOING_AJAX) {
+        return true;
+    }
+    
+    // Load for REST API requests
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return true;
+    }
+    
+    // Load on pages with booking shortcodes
+    global $post;
+    if ($post && is_object($post) && isset($post->post_content)) {
+        if (has_shortcode($post->post_content, 'leobo_custom_booking_form') ||
+            has_shortcode($post->post_content, 'leobo_test_booking_form')) {
+            return true;
+        }
+    }
+    
+    // Load on specific booking-related pages (customize these based on your site)
+    if (is_page() && $post) {
+        $booking_page_slugs = array(
+            'booking',
+            'make-a-reservation', 
+            'book-now',
+            'enquiry',
+            'contact'
+        );
+        
+        if (in_array($post->post_name, $booking_page_slugs)) {
+            return true;
+        }
+    }
+    
+    // Check if current page template uses booking functionality
+    if (is_page()) {
+        $template = get_page_template_slug();
+        if (strpos($template, 'booking') !== false) {
+            return true;
+        }
+    }
+    
+    // Don't load on other pages for performance
+    return false;
+}
 
 /**
- * Initialize the Custom Booking System
- * This hook ensures WordPress is fully loaded before initializing our system
+ * Load required files only when needed
  */
-add_action('init', 'leobo_custom_booking_init');
+function leobo_load_booking_system_files() {
+    require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingAvailability.php';
+    require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingPricing.php';
+    require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingDatabase.php';
+    require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingEmail.php';
+    require_once LEOBO_CUSTOM_BOOKING_PATH . '/CustomBookingSystem.php';
+}
+
+/**
+ * Initialize the Custom Booking System with conditional loading
+ * This hook ensures WordPress is fully loaded and only loads when needed
+ */
+add_action('init', 'leobo_custom_booking_init', 10);
 
 function leobo_custom_booking_init() {
+    // Performance optimization: Only load booking system when needed
+    if (!leobo_should_load_booking_system()) {
+        return; // Exit early to save resources
+    }
+    
     // Prevent multiple instantiation
-    if (!class_exists('LeoboCustomBookingSystem') || isset($GLOBALS['leobo_booking_system'])) {
+    if (isset($GLOBALS['leobo_booking_system'])) {
+        return;
+    }
+    
+    // Load files only when needed
+    leobo_load_booking_system_files();
+    
+    // Check if class exists after loading
+    if (!class_exists('LeoboCustomBookingSystem')) {
+        error_log('Leobo Booking System: Failed to load LeoboCustomBookingSystem class');
         return;
     }
     
@@ -49,37 +121,20 @@ function leobo_custom_booking_init() {
 }
 
 /**
- * Activation hook - Create database tables
+ * Activation hook - Create database tables (optimized)
  */
 register_activation_hook(__FILE__, 'leobo_custom_booking_activate');
 
 function leobo_custom_booking_activate() {
-    global $wpdb;
+    // Load database class for activation
+    require_once LEOBO_CUSTOM_BOOKING_PATH . '/includes/BookingDatabase.php';
     
-    $table_name = $wpdb->prefix . 'leobo_booking_requests';
+    // Create/update database table
+    $database = new LeoboBookingDatabase();
+    $database->create_table();
     
-    $charset_collate = $wpdb->get_charset_collate();
-    
-    $sql = "CREATE TABLE $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        checkin_date date NOT NULL,
-        checkout_date date NOT NULL,
-        guests int(11) NOT NULL,
-        accommodation varchar(255) NOT NULL,
-        selected_packages text,
-        first_name varchar(100) NOT NULL,
-        last_name varchar(100) NOT NULL,
-        email varchar(255) NOT NULL,
-        phone varchar(50) NOT NULL,
-        special_requests text,
-        total_amount decimal(10,2) NOT NULL,
-        status varchar(50) DEFAULT 'pending',
-        created_at datetime DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id)
-    ) $charset_collate;";
-    
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
+    // Set schema version for future optimizations
+    update_option('leobo_booking_schema_version', '2.1.0');
 }
 
 /**
@@ -108,14 +163,38 @@ function leobo_get_booking_system() {
 }
 
 /**
- * Admin notice for configuration
+ * Admin notice for configuration (only show when relevant)
  */
 add_action('admin_notices', 'leobo_custom_booking_admin_notices');
 
 function leobo_custom_booking_admin_notices() {
-    if (!leobo_custom_booking_is_configured()) {
-        echo '<div class="notice notice-warning is-dismissible">';
-        echo '<p><strong>Leobo Custom Booking System:</strong> Please configure ACF Pro fields for accommodations, seasons, and packages in the Options pages.</p>';
-        echo '</div>';
+    // Only show configuration notices on booking-related admin pages
+    $current_screen = get_current_screen();
+    if ($current_screen && (
+        strpos($current_screen->id, 'booking') !== false ||
+        strpos($current_screen->id, 'leobo') !== false ||
+        $current_screen->id === 'dashboard'
+    )) {
+        if (!leobo_custom_booking_is_configured()) {
+            echo '<div class="notice notice-warning is-dismissible">';
+            echo '<p><strong>Leobo Custom Booking System:</strong> Please configure ACF Pro fields for accommodations, seasons, and packages in the Options pages.</p>';
+            echo '</div>';
+        }
     }
+}
+
+/**
+ * Debug function to show loading status (remove in production)
+ */
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    add_action('wp_footer', function() {
+        if (is_super_admin()) {
+            $loaded = isset($GLOBALS['leobo_booking_system']);
+            $should_load = leobo_should_load_booking_system();
+            
+            echo '<!-- Leobo Booking System Status: ';
+            echo 'Should Load: ' . ($should_load ? 'YES' : 'NO') . ', ';
+            echo 'Actually Loaded: ' . ($loaded ? 'YES' : 'NO') . ' -->';
+        }
+    });
 }

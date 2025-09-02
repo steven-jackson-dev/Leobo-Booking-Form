@@ -14,6 +14,24 @@ class LeoboBookingDatabase {
     public function __construct() {
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'leobo_booking_requests';
+        
+        // Performance optimization: Only run schema updates when needed
+        // Use WordPress transients to cache schema checks
+        add_action('wp_loaded', array($this, 'maybe_update_schema'), 20);
+    }
+    
+    /**
+     * Performance optimization: Only run schema updates when needed
+     */
+    public function maybe_update_schema() {
+        // Check schema version to avoid running expensive operations on every load
+        $schema_version = get_option('leobo_booking_schema_version', '0');
+        $current_version = '2.1.0';
+        
+        if (version_compare($schema_version, $current_version, '<')) {
+            $this->create_table();
+            update_option('leobo_booking_schema_version', $current_version);
+        }
     }
     
     /**
