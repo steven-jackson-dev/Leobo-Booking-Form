@@ -1,19 +1,14 @@
 <?php
-// Emergency AJAX handler - register as early as possible
+// AJAX Handler: Load booking system for AJAX requests
 add_action('init', function() {
-    error_log('=== INIT ACTION FIRED ===');
-    error_log('Is AJAX: ' . (wp_doing_ajax() ? 'YES' : 'NO'));
-    error_log('Current action: ' . ($_POST['action'] ?? $_GET['action'] ?? 'none'));
-    
-    // If this is an AJAX request for booking, load the system immediately
-    if (wp_doing_ajax() && isset($_POST['action']) && $_POST['action'] === 'calculate_booking_price') {
-        error_log('=== EMERGENCY AJAX HANDLER FOR BOOKING PRICE ===');
+    // Load booking system for AJAX requests
+    if (wp_doing_ajax() && isset($_POST['action']) && 
+        in_array($_POST['action'], ['calculate_booking_price', 'test_booking_ajax', 'submit_booking'])) {
         
         // Load all required files
         $booking_path = get_template_directory() . '/app/CustomBookingSystem';
         
         if (file_exists($booking_path . '/CustomBookingSystem.php')) {
-            error_log('Loading booking system files...');
             require_once $booking_path . '/includes/BookingAvailability.php';
             require_once $booking_path . '/includes/BookingPricing.php';
             require_once $booking_path . '/includes/BookingDatabase.php';
@@ -21,38 +16,26 @@ add_action('init', function() {
             require_once $booking_path . '/includes/BookingContent.php';
             require_once $booking_path . '/CustomBookingSystem.php';
             
-            if (class_exists('LeoboCustomBookingSystem')) {
-                error_log('Creating booking system instance...');
-                $booking_system = new LeoboCustomBookingSystem();
-                $GLOBALS['leobo_booking_system'] = $booking_system;
-                error_log('=== EMERGENCY BOOKING SYSTEM LOADED ===');
-            } else {
-                error_log('=== BOOKING SYSTEM CLASS NOT FOUND ===');
+            if (class_exists('LeoboCustomBookingSystem') && !isset($GLOBALS['leobo_booking_system'])) {
+                $GLOBALS['leobo_booking_system'] = new LeoboCustomBookingSystem();
             }
-        } else {
-            error_log('=== BOOKING SYSTEM FILES NOT FOUND ===');
         }
     }
 }, 1); // Priority 1 to run very early
 
+// Direct AJAX handlers as backup
 add_action('wp_ajax_calculate_booking_price', function() {
-    error_log('=== DIRECT AJAX HOOK FIRED ===');
     if (isset($GLOBALS['leobo_booking_system'])) {
-        error_log('Calling pricing method...');
         $GLOBALS['leobo_booking_system']->ajax_calculate_price();
     } else {
-        error_log('Booking system not available in direct hook');
         wp_send_json_error('Booking system not loaded');
     }
 });
 
 add_action('wp_ajax_nopriv_calculate_booking_price', function() {
-    error_log('=== DIRECT AJAX NOPRIV HOOK FIRED ===');
     if (isset($GLOBALS['leobo_booking_system'])) {
-        error_log('Calling pricing method...');
         $GLOBALS['leobo_booking_system']->ajax_calculate_price();
     } else {
-        error_log('Booking system not available in direct nopriv hook');
         wp_send_json_error('Booking system not loaded');
     }
 });

@@ -322,10 +322,6 @@ class LeoboCustomBookingSystem {
      * Test AJAX endpoint to verify basic functionality
      */
     public function test_ajax_endpoint() {
-        error_log('=== TEST AJAX ENDPOINT CALLED ===');
-        error_log('Current time: ' . date('Y-m-d H:i:s'));
-        error_log('WordPress doing AJAX: ' . (wp_doing_ajax() ? 'YES' : 'NO'));
-        error_log('Action parameter: ' . ($_POST['action'] ?? 'NOT SET'));
         wp_send_json_success(array('message' => 'AJAX is working!', 'timestamp' => current_time('mysql')));
     }
     
@@ -333,11 +329,6 @@ class LeoboCustomBookingSystem {
      * AJAX: Calculate booking price
      */
     public function ajax_calculate_price() {
-        error_log('=== AJAX CALCULATE PRICE METHOD CALLED ===');
-        error_log('Current time: ' . date('Y-m-d H:i:s'));
-        error_log('WordPress doing AJAX: ' . (wp_doing_ajax() ? 'YES' : 'NO'));
-        error_log('Action parameter: ' . ($_POST['action'] ?? 'NOT SET'));
-        
         // Set error handler to catch any issues
         set_error_handler(function($severity, $message, $file, $line) {
             error_log("PHP Error in price calculation: $message on line $line in $file");
