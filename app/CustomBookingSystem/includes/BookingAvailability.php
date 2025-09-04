@@ -74,6 +74,10 @@ class LeoboBookingAvailability {
      * Fetch availability from Pan Hospitality API with enhanced error handling
      */
     private function fetch_availability_from_api($start_date, $end_date) {
+        // Convert date format if needed (Y-m-d to Y/m/d)
+        $start_date = str_replace('-', '/', $start_date);
+        $end_date = str_replace('-', '/', $end_date);
+        
         // Validate date format
         if (!$this->validate_date_format($start_date) || !$this->validate_date_format($end_date)) {
             error_log('Leobo Booking API Error: Invalid date format provided');
@@ -404,6 +408,88 @@ class LeoboBookingAvailability {
     }
     
     /**
+     * Debug API call with detailed information
+     */
+    public function debug_api_call($start_date, $end_date) {
+        // Convert date format if needed (Y-m-d to Y/m/d)
+        $start_date = str_replace('-', '/', $start_date);
+        $end_date = str_replace('-', '/', $end_date);
+        
+        $params = array(
+            'apiKey' => $this->api_key,
+            'startDate' => $start_date,
+            'endDate' => $end_date
+        );
+        
+        $query_string = http_build_query($params);
+        $full_url = $this->api_url . '?' . $query_string;
+        
+        $debug_info = array(
+            'api_url' => $this->api_url,
+            'api_key' => $this->api_key,
+            'parameters' => $params,
+            'full_url' => $full_url,
+            'date_range' => $start_date . ' to ' . $end_date
+        );
+        
+        // Make the actual API call
+        $response = wp_remote_get($full_url, array(
+            'timeout' => 30,
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'User-Agent' => 'Leobo WordPress Site v1.0'
+            ),
+            'sslverify' => true
+        ));
+        
+        if (is_wp_error($response)) {
+            $debug_info['error'] = $response->get_error_message();
+            $debug_info['raw_response'] = null;
+            $debug_info['response_code'] = null;
+        } else {
+            $debug_info['response_code'] = wp_remote_retrieve_response_code($response);
+            $debug_info['response_headers'] = wp_remote_retrieve_headers($response);
+            $debug_info['raw_response'] = wp_remote_retrieve_body($response);
+            $debug_info['response_size'] = strlen($debug_info['raw_response']);
+            
+            // Try to decode JSON
+            $decoded = json_decode($debug_info['raw_response'], true);
+            $debug_info['json_decode_success'] = json_last_error() === JSON_ERROR_NONE;
+            $debug_info['decoded_response'] = $decoded;
+            
+            if ($debug_info['json_decode_success'] && $decoded) {
+                $debug_info['response_structure'] = $this->analyze_response_structure($decoded);
+            }
+        }
+        
+        return $debug_info;
+    }
+    
+    /**
+     * Analyze the structure of API response
+     */
+    private function analyze_response_structure($data) {
+        $structure = array(
+            'type' => gettype($data),
+            'is_array' => is_array($data),
+            'is_object' => is_object($data)
+        );
+        
+        if (is_array($data)) {
+            $structure['array_length'] = count($data);
+            $structure['array_keys'] = array_keys($data);
+            
+            // Check if it's an associative array or indexed array
+            $structure['is_associative'] = array_keys($data) !== range(0, count($data) - 1);
+            
+            // Sample first few items
+            $structure['sample_items'] = array_slice($data, 0, 3, true);
+        }
+        
+        return $structure;
+    }
+    
+    /**
      * Clear all availability caches
      */
     public function clear_all_caches() {
@@ -428,30 +514,36 @@ $leobo_booking_availability = new LeoboBookingAvailability();
 
 function leobo_get_blocked_dates($months_ahead = 12, $format = 'Y-m-d') {
     global $leobo_booking_availability;
+    if (!$leobo_booking_availability) return array();
     return $leobo_booking_availability->get_blocked_dates($months_ahead, $format);
 }
 
 function leobo_is_date_available($date) {
     global $leobo_booking_availability;
+    if (!$leobo_booking_availability) return true;
     return $leobo_booking_availability->is_date_available($date);
 }
 
 function leobo_get_detailed_availability($start_date, $end_date) {
     global $leobo_booking_availability;
+    if (!$leobo_booking_availability) return array();
     return $leobo_booking_availability->get_detailed_availability($start_date, $end_date);
 }
 
 function leobo_get_available_room_types($date = null) {
     global $leobo_booking_availability;
+    if (!$leobo_booking_availability) return array();
     return $leobo_booking_availability->get_available_room_types($date);
 }
 
 function leobo_test_api_connection() {
     global $leobo_booking_availability;
+    if (!$leobo_booking_availability) return false;
     return $leobo_booking_availability->test_api_connection();
 }
 
 function leobo_clear_availability_cache() {
     global $leobo_booking_availability;
+    if (!$leobo_booking_availability) return false;
     return $leobo_booking_availability->clear_all_caches();
 }

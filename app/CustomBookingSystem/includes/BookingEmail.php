@@ -26,14 +26,28 @@ class BookingEmail {
             'prefix' => $prefix
         ));
         
-        $headers = array('Content-Type: text/html; charset=UTF-8');
+        // Enhanced headers for SendGrid compatibility
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8',
+            'From: Leobo Booking System <noreply@leobo.co.za>',
+            'Reply-To: ' . (!empty($booking_data['email']) ? $booking_data['email'] : 'noreply@leobo.co.za')
+        );
+        
+        $admin_email = apply_filters('leobo_booking_admin_email', 'reservations@leobo.co.za');
         
         $result = wp_mail(
-            apply_filters('leobo_booking_admin_email', 'reservations@leobo.co.za'),
+            $admin_email,
             $subject,
             $message,
             $headers
         );
+        
+        // Log the result for debugging
+        if (!$result) {
+            error_log('Leobo Booking: Admin notification email failed for booking #' . $booking_id . ' to ' . $admin_email);
+        } else {
+            error_log('Leobo Booking: Admin notification email sent successfully for booking #' . $booking_id . ' to ' . $admin_email);
+        }
         
         return $result;
     }
@@ -49,14 +63,29 @@ class BookingEmail {
             'prefix' => $prefix
         ));
         
-        $headers = array('Content-Type: text/html; charset=UTF-8');
+        // Enhanced headers for SendGrid compatibility
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8',
+            'From: Leobo Private Reserve <reservations@leobo.co.za>',
+            'Reply-To: reservations@leobo.co.za'
+        );
+        
+        // Ensure we have a valid email address
+        $recipient_email = !empty($booking_data['email']) ? $booking_data['email'] : 'reservations@leobo.co.za';
         
         $result = wp_mail(
-            $booking_data['email'],
+            $recipient_email,
             $subject,
             $message,
             $headers
         );
+        
+        // Log the result for debugging
+        if (!$result) {
+            error_log('Leobo Booking: User confirmation email failed for booking #' . $booking_id . ' to ' . $recipient_email);
+        } else {
+            error_log('Leobo Booking: User confirmation email sent successfully for booking #' . $booking_id . ' to ' . $recipient_email);
+        }
         
         return $result;
     }

@@ -16,6 +16,7 @@ class LeoboCustomBookingSystem {
     private $pricing;
     private $database;
     private $email;
+    private $availability;
     
     public function __construct() {
         global $wpdb, $wp_query, $post;
@@ -27,6 +28,10 @@ class LeoboCustomBookingSystem {
         $this->pricing = new LeoboBookingPricing();
         $this->database = new LeoboBookingDatabase();
         $this->email = new BookingEmail();
+        $this->availability = new LeoboBookingAvailability();
+        
+        // Set global availability variable for backward compatibility
+        $GLOBALS['leobo_booking_availability'] = $this->availability;
         
         // Register hooks
         $this->register_hooks();
@@ -877,6 +882,13 @@ class LeoboCustomBookingSystem {
         ob_start();
         include $template_file;
         return ob_get_clean();
+    }
+    
+    /**
+     * Get availability component (for external access)
+     */
+    public function get_availability() {
+        return $this->availability;
     }
     
     /**
@@ -1971,12 +1983,22 @@ define('WP_DEBUG_LOG', true);</code></pre>
         $cache_cleared = false;
         
         if (isset($_POST['test_api']) && wp_verify_nonce($_POST['api_test_nonce'], 'leobo_api_test')) {
-            $test_result = leobo_test_api_connection();
+            // Test API connection using class instance
+            if ($this->availability) {
+                $test_result = $this->availability->test_api_connection();
+            } else {
+                $test_result = false;
+            }
         }
         
         if (isset($_POST['clear_cache']) && wp_verify_nonce($_POST['cache_clear_nonce'], 'leobo_cache_clear')) {
-            $cache_result = leobo_clear_availability_cache();
-            $cache_cleared = $cache_result['status'] === 'success';
+            // Clear cache using class instance
+            if ($this->availability) {
+                $cache_result = $this->availability->clear_all_caches();
+                $cache_cleared = $cache_result['status'] === 'success';
+            } else {
+                $cache_cleared = false;
+            }
         }
         
         ?>
@@ -2281,6 +2303,32 @@ define('WP_DEBUG_LOG', true);</code></pre>
      * API Testing page - Test blocked date ranges and availability responses
      */
     public function api_testing_page() {
+        // Handle live API test
+        $live_api_result = null;
+        if (isset($_POST['test_live_api']) && wp_verify_nonce($_POST['live_api_nonce'], 'leobo_live_api_test')) {
+            // Test the live API connection
+            global $leobo_booking_availability;
+            if ($leobo_booking_availability) {
+                $start_date = date('Y-m-d');
+                $end_date = date('Y-m-d', strtotime('+30 days'));
+                
+                // Use debug method for detailed API information
+                $debug_info = $leobo_booking_availability->debug_api_call($start_date, $end_date);
+                
+                $live_api_result = array(
+                    'connection_test' => $leobo_booking_availability->test_api_connection(),
+                    'api_response' => $leobo_booking_availability->get_availability($start_date, $end_date, true), // Force refresh
+                    'blocked_dates' => $leobo_booking_availability->get_blocked_dates(1, 'Y-m-d'),
+                    'date_range' => $start_date . ' to ' . $end_date,
+                    'debug_info' => $debug_info
+                );
+            } else {
+                $live_api_result = array(
+                    'error' => 'Booking availability system not loaded'
+                );
+            }
+        }
+
         // Handle blocked dates test
         $test_result = null;
         $blocked_dates_set = false;
@@ -2349,6 +2397,101 @@ define('WP_DEBUG_LOG', true);</code></pre>
                     <li><code>Prov</code> = Number of provisional bookings</li>
                     <li><code>Conf</code> = Number of confirmed bookings</li>
                 </ul>
+            </div>
+            
+            <!-- Live API Testing -->
+            <div class="card" style="max-width: none; margin-bottom: 20px;">
+                <h2>Live API Testing</h2>
+                <p>Test the actual Pan Hospitality API connection and see real data responses.</p>
+                
+                <form method="post" style="margin-bottom: 20px;">
+                    <?php wp_nonce_field('leobo_live_api_test', 'live_api_nonce'); ?>
+                    <p>
+                        <input type="submit" name="test_live_api" class="button button-primary" value="Test Live API (Next 30 Days)" />
+                        <span class="description">This will fetch real availability data from the Pan Hospitality API</span>
+                    </p>
+                </form>
+                
+                <?php if ($live_api_result): ?>
+                    <div class="notice notice-info inline">
+                        <h4>Live API Test Results</h4>
+                        
+                        <?php if (isset($live_api_result['error'])): ?>
+                            <div style="color: #d63384; margin: 10px 0;">
+                                <strong>Error:</strong> <?php echo esc_html($live_api_result['error']); ?>
+                            </div>
+                        <?php else: ?>
+                            <p><strong>Date Range:</strong> <?php echo esc_html($live_api_result['date_range']); ?></p>
+                            <p><strong>Connection Test:</strong> 
+                                <span style="color: <?php echo $live_api_result['connection_test'] ? '#28a745' : '#dc3545'; ?>">
+                                    <?php echo $live_api_result['connection_test'] ? '✅ Success' : '❌ Failed'; ?>
+                                </span>
+                            </p>
+                            
+                            <?php if (isset($live_api_result['debug_info'])): ?>
+                                <h4>API Debug Information:</h4>
+                                <div style="background: #e9ecef; border: 1px solid #ced4da; border-radius: 4px; padding: 15px; margin: 15px 0;">
+                                    <p><strong>Full API URL:</strong> <code><?php echo esc_html($live_api_result['debug_info']['full_url']); ?></code></p>
+                                    <p><strong>API Key:</strong> <code><?php echo esc_html($live_api_result['debug_info']['api_key']); ?></code></p>
+                                    <p><strong>Response Code:</strong> <code><?php echo esc_html($live_api_result['debug_info']['response_code'] ?? 'N/A'); ?></code></p>
+                                    <p><strong>Response Size:</strong> <?php echo isset($live_api_result['debug_info']['response_size']) ? esc_html($live_api_result['debug_info']['response_size']) . ' bytes' : 'N/A'; ?></p>
+                                    <p><strong>JSON Valid:</strong> 
+                                        <span style="color: <?php echo $live_api_result['debug_info']['json_decode_success'] ? '#28a745' : '#dc3545'; ?>">
+                                            <?php echo $live_api_result['debug_info']['json_decode_success'] ? '✅ Yes' : '❌ No'; ?>
+                                        </span>
+                                    </p>
+                                    
+                                    <?php if (isset($live_api_result['debug_info']['error'])): ?>
+                                        <p><strong>Error:</strong> <span style="color: #dc3545;"><?php echo esc_html($live_api_result['debug_info']['error']); ?></span></p>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <h4>Raw API Response:</h4>
+                            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; max-height: 500px; overflow-y: auto;">
+                                <?php if (isset($live_api_result['debug_info']['raw_response'])): ?>
+                                    <pre style="margin: 0; font-size: 11px; white-space: pre-wrap;"><?php echo esc_html($live_api_result['debug_info']['raw_response']); ?></pre>
+                                <?php else: ?>
+                                    <pre style="margin: 0; font-size: 11px; white-space: pre-wrap;"><?php echo esc_html(print_r($live_api_result['api_response'], true)); ?></pre>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <?php if (isset($live_api_result['debug_info']['response_structure'])): ?>
+                                <h4>Response Structure Analysis:</h4>
+                                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 15px 0;">
+                                    <pre style="margin: 0; font-size: 11px;"><?php echo esc_html(print_r($live_api_result['debug_info']['response_structure'], true)); ?></pre>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <h4>Processed Blocked Dates:</h4>
+                            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin-top: 15px;">
+                                <?php if (empty($live_api_result['blocked_dates'])): ?>
+                                    <p style="color: #856404; margin: 0;"><strong>No blocked dates found</strong> - Either all dates are available or there's an issue with data processing.</p>
+                                <?php else: ?>
+                                    <p style="color: #856404; margin: 0 0 10px 0;"><strong>Blocked Dates (<?php echo count($live_api_result['blocked_dates']); ?> total):</strong></p>
+                                    <div style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                                        <?php foreach (array_slice($live_api_result['blocked_dates'], 0, 50) as $date): ?>
+                                            <span style="display: inline-block; margin: 2px 5px 2px 0; padding: 2px 6px; background: #fff; border: 1px solid #ffc107; border-radius: 3px;"><?php echo esc_html($date); ?></span>
+                                        <?php endforeach; ?>
+                                        <?php if (count($live_api_result['blocked_dates']) > 50): ?>
+                                            <p style="margin: 10px 0 0 0; color: #856404;">... and <?php echo count($live_api_result['blocked_dates']) - 50; ?> more</p>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div style="margin-top: 15px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+                                <strong>Debugging Tips:</strong>
+                                <ul style="margin: 5px 0;">
+                                    <li>Check if the API response contains availability data in the expected format</li>
+                                    <li>Verify that dates with <code>availability: 0</code> are being processed as blocked</li>
+                                    <li>If no blocked dates appear, check the API response structure above</li>
+                                    <li>Test the booking form calendar to see if these dates are disabled</li>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
             
             <!-- Blocked Dates Testing -->
